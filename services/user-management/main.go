@@ -15,11 +15,7 @@ func main() {
 			"message": "health endpoint",
 		})
 	})
-	r.POST("/login", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "login endpoint",
-		})
-	})
+	r.POST("/login", handlers.Login)
 	r.POST("/register", handlers.Register)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
