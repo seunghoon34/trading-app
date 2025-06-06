@@ -2,30 +2,66 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/seunghoon34/trading-app/services/user-management/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Register(c *gin.Context) {
+func Register(c *gin.Context, db *pgxpool.Pool) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
 		return
 	}
 
-	user.Password = string(hashedPassword)
-	user.CreatedAt = time.Now()
-	user.UpdatedAt = time.Now()
+	var existingID int
+
+	err = db.QueryRow(context.Background(),
+		"SELECT id FROM users WHERE email=$1", user.Email).Scan(&existingID)
+	if err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
+		return
+	} else if err != pgx.ErrNoRows {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	// If we reach here, it means the user does not exist, and we can proceed to insert
+	// Insert user into database
+	query := `
+        INSERT INTO users (first_name, last_name, email, password, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        RETURNING id, created_at, updated_at`
+
+	var id int
+	var createdAt, updatedAt time.Time
+
+	err = db.QueryRow(context.Background(), query,
+		user.FirstName, user.LastName, user.Email, string(hashedPassword)).
+		Scan(&id, &createdAt, &updatedAt)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+
+	// Set the returned values
+	user.ID = id
+	user.CreatedAt = createdAt
+	user.UpdatedAt = updatedAt
+	user.Password = "" // Don't return password in response
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "User registered successfully",
@@ -33,36 +69,27 @@ func Register(c *gin.Context) {
 	})
 }
 
-func Login(c *gin.Context) {
+func Login(c *gin.Context, db *pgxpool.Pool) {
 	var loginData struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 
-	var userEmails = []string{"test@example.com", "test2@example.com"}
-
 	// for testing purposes
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("testpassword"), bcrypt.DefaultCost)
 
 	if err := c.ShouldBindJSON(&loginData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	emailFound := false
-	for _, email := range userEmails {
-		if email == loginData.Email {
-			emailFound = true
-			break
-		}
-	}
-
-	// If email not found, return error
-	if !emailFound {
+	var password string
+	err := db.QueryRow(context.Background(), "SELECT password FROM users WHERE email=$1", loginData.Email).Scan(&password)
+	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "incorrect password or email"})
 		return
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(loginData.Password)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "incorrect password or email"})
+
+	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(loginData.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "incorrect password or email"})
 		return
 	}
 
