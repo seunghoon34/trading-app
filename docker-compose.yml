@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: trading-postgres
+    environment:
+      POSTGRES_USER: trading_user
+      POSTGRES_PASSWORD: trading_password
+      POSTGRES_DB: trading_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - trading-network
+
+  # User Management Service
+  user-management:
+    build:
+      context: ./services/user-management
+      dockerfile: Dockerfile
+    container_name: user-management-service
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=trading_user
+      - DB_PASSWORD=trading_password
+      - DB_NAME=trading_db
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - trading-network
+
+# Define network for service communication
+networks:
+  trading-network:
+    driver: bridge
+
+# Define volumes for data persistence
+volumes:
+  postgres_data:
