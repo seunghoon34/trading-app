@@ -52,3 +52,9 @@ Thumbs.db
 *.log
 
 notes.txt
+
+.env
+.env.local
+.env.development
+.env.production
+*.env

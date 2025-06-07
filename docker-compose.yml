@@ -34,6 +34,21 @@ services:
       - postgres
     networks:
       - trading-network
+  
+  # Trading Market Data Service
+  market-data:
+    build:
+      context: ./services/market-data
+      dockerfile: Dockerfile
+    container_name: market-data-service
+    environment:
+      - ALPACA_API_KEY=${ALPACA_API_KEY}
+      - ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}
+      - ALPACA_MARKET_DATA_URL=${ALPACA_MARKET_DATA_URL}
+    ports:
+      - "8082:8082"
+    networks:
+      - trading-network
 
 # Define network for service communication
 networks:
