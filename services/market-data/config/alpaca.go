@@ -12,7 +12,7 @@ func MakeMarketDataRequest(endpoint string) ([]byte, error) {
 	// Build full URL
 	baseURL := os.Getenv("ALPACA_MARKET_DATA_URL")
 	url := fmt.Sprintf("%s%s", baseURL, endpoint)
-
+	fmt.Printf("Making request to Alpaca Market Data API: %s", url)
 	// Create request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
