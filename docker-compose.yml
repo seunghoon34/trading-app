@@ -49,6 +49,33 @@ services:
       - "8082:8082"
     networks:
       - trading-network
+  # Trading Engine Service
+  trading-engine:
+    build:
+      context: ./services/trading-engine
+      dockerfile: Dockerfile
+    container_name: trading-engine-service
+    environment:
+      - ALPACA_API_KEY=${ALPACA_API_KEY}
+      - ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}
+    ports:
+      - "8083:8083"
+    networks:
+      - trading-network
+  # API Gateway Service
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway-service
+    ports:
+      - "3000:3000"
+    depends_on:
+      - user-management
+      - market-data
+      - trading-engine
+    networks:
+      - trading-network
 
 # Define network for service communication
 networks:
