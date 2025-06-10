@@ -62,6 +62,19 @@ services:
       - "8083:8083"
     networks:
       - trading-network
+  # Portfolio Service
+  portfolio:
+    build:
+      context: ./services/portfolio
+      dockerfile: Dockerfile
+    container_name: portfolio-service
+    environment:
+      - ALPACA_API_KEY=${ALPACA_API_KEY}
+      - ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}
+    ports:
+      - "8084:8084"
+    networks:
+      - trading-network
   # API Gateway Service
   api-gateway:
     build:
@@ -74,6 +87,7 @@ services:
       - user-management
       - market-data
       - trading-engine
+      - portfolio
     networks:
       - trading-network
 

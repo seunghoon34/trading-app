@@ -19,6 +19,7 @@ func main() {
 	r.Any("/api/v1/auth/*path", handlers.ForwardToAuthService)
 	r.Any("/api/v1/market/*path", handlers.ForwardToMarketDataService)
 	r.Any("/api/v1/trading/*path", handlers.ForwardToTradingService)
+	r.Any("/api/v1/portfolio/*path", handlers.ForwardToPortfolioService)
 
 	r.Run(":3000") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 
