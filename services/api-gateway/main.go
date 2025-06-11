@@ -12,7 +12,10 @@ import (
 func main() {
 
 	r := gin.Default()
+	r.Use(middleware.ErrorHandlingMiddleware())
 	r.Use(middleware.CORSMiddleware())
+	r.Use(middleware.RequestLoggingMiddleware())
+	r.Use(middleware.RateLimitMiddleware())
 
 	// routes
 	r.GET("/health", func(c *gin.Context) {
