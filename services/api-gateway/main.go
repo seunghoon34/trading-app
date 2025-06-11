@@ -11,6 +11,9 @@ import (
 func main() {
 
 	r := gin.Default()
+	r.Use(handlers.CORSMiddleware())
+
+	// routes
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "health endpoint",
