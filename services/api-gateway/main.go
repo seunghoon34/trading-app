@@ -6,12 +6,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/seunghoon34/trading-app/services/api-gateway/handlers"
+	"github.com/seunghoon34/trading-app/services/api-gateway/middleware"
 )
 
 func main() {
 
 	r := gin.Default()
-	r.Use(handlers.CORSMiddleware())
+	r.Use(middleware.CORSMiddleware())
 
 	// routes
 	r.GET("/health", func(c *gin.Context) {
@@ -20,9 +21,15 @@ func main() {
 		})
 	})
 	r.Any("/api/v1/auth/*path", handlers.ForwardToAuthService)
-	r.Any("/api/v1/market/*path", handlers.ForwardToMarketDataService)
-	r.Any("/api/v1/trading/*path", handlers.ForwardToTradingService)
-	r.Any("/api/v1/portfolio/*path", handlers.ForwardToPortfolioService)
+
+	// Protected routes (JWT required)
+	protected := r.Group("/api/v1")
+	protected.Use(middleware.JWTMiddleware()) // ← Add JWT middleware
+	{
+		protected.Any("/market/*path", handlers.ForwardToMarketDataService)
+		protected.Any("/trading/*path", handlers.ForwardToTradingService)
+		protected.Any("/portfolio/*path", handlers.ForwardToPortfolioService)
+	}
 
 	r.Run(":3000") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 

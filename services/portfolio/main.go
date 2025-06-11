@@ -17,12 +17,12 @@ func main() {
 			"message": "Portfolio health endpoint",
 		})
 	})
-	r.GET("/portfolio/:account_id/positions", handlers.GetPositions)
-	r.GET("/portfolio/:account_id/value", handlers.GetPortfolioWorth)
+	r.GET("/positions", handlers.GetPositions)
+	r.GET("/value", handlers.GetPortfolioWorth)
 
-	r.GET("/portfolio/:account_id/performance", handlers.GetPortfolioPerformance)
+	r.GET("/performance", handlers.GetPortfolioPerformance)
 
-	r.GET("/portfolio/:account_id/positions/:symbol", handlers.GetPosition)
+	r.GET("/positions/:symbol", handlers.GetPosition)
 
 	r.Run(":8084") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

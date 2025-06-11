@@ -88,7 +88,12 @@ func getPositionsHelper(account_id string) ([]Position, error) {
 }
 func GetPosition(c *gin.Context) {
 	symbol := c.Param("symbol")
-	accountID := c.Param("account_id")
+
+	accountID := c.GetHeader("X-Account-ID") // ← Get from header
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Account ID header missing"})
+		return
+	}
 
 	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/positions/%s", accountID, symbol)
 
@@ -121,7 +126,11 @@ func GetPosition(c *gin.Context) {
 }
 
 func GetPositions(c *gin.Context) {
-	accountID := c.Param("account_id")
+	accountID := c.GetHeader("X-Account-ID") // ← CORRECT: Get from header
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Account ID header missing"})
+		return
+	}
 
 	positions, err := getPositionsHelper(accountID) // Use your helper!
 	if err != nil {
@@ -136,7 +145,11 @@ func GetPositions(c *gin.Context) {
 }
 
 func GetPortfolioWorth(c *gin.Context) {
-	accountID := c.Param("account_id")
+	accountID := c.GetHeader("X-Account-ID") // ← Get from header
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Account ID header missing"})
+		return
+	}
 
 	positions, err := getPositionsHelper(accountID) // Get both data and error
 	if err != nil {
@@ -157,7 +170,11 @@ func GetPortfolioWorth(c *gin.Context) {
 }
 
 func GetPortfolioPerformance(c *gin.Context) {
-	accountID := c.Param("account_id")
+	accountID := c.GetHeader("X-Account-ID") // ← Get from header
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Account ID header missing"})
+		return
+	}
 
 	positions, err := getPositionsHelper(accountID)
 	if err != nil {

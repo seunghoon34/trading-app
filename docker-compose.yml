@@ -27,6 +27,7 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
+      - JWT_SECRET=${JWT_SECRET}
     ports:
       - "8080:8080"
     depends_on:
@@ -89,6 +90,8 @@ services:
       - market-data
       - trading-engine
       - portfolio
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
     networks:
       - trading-network
   # # ELK Stack Services

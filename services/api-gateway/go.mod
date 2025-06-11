@@ -2,7 +2,10 @@ module github.com/seunghoon34/trading-app/services/api-gateway
 
 go 1.23.2
 
-require github.com/gin-gonic/gin v1.10.1
+require (
+	github.com/gin-gonic/gin v1.10.1
+	github.com/golang-jwt/jwt/v4 v4.5.2
+)
 
 require (
 	github.com/bytedance/sonic v1.11.6 // indirect
