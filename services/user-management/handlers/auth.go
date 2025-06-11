@@ -4,14 +4,48 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/seunghoon34/trading-app/services/user-management/models"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// JWT Claims structure
+type Claims struct {
+	AccountID string `json:"account_id"`
+	Email     string `json:"email"`
+	jwt.RegisteredClaims
+}
+
+// Generate JWT token
+func generateJWT(accountID, email string) (string, error) {
+	// Create claims with user data
+	claims := Claims{
+		AccountID: accountID,
+		Email:     email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // 24 hour expiration
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	// Create token with claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Get JWT secret from environment (we'll set this up)
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "your-secret-key" // Default for development
+	}
+
+	// Sign and return the token
+	return token.SignedString([]byte(jwtSecret))
+}
 
 func Register(c *gin.Context, db *pgxpool.Pool) {
 	var user models.User
@@ -75,8 +109,6 @@ func Login(c *gin.Context, db *pgxpool.Pool) {
 		Password string `json:"password"`
 	}
 
-	// for testing purposes
-
 	if err := c.ShouldBindJSON(&loginData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -93,7 +125,21 @@ func Login(c *gin.Context, db *pgxpool.Pool) {
 		return
 	}
 
+	accountID := "337392e2-135e-4b75-b2ae-55cd2749a11a"
+	email := loginData.Email // Get email from login request
+
+	// Generate JWT token
+	token, err := generateJWT(accountID, email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	// Return token and user info
 	c.JSON(http.StatusOK, gin.H{
-		"message": "User Login successfully",
+		"message":    "User login successful",
+		"token":      token,
+		"account_id": accountID,
+		"email":      email,
 	})
 }
