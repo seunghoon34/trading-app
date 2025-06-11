@@ -74,6 +74,8 @@ services:
       - "8084:8084"
     networks:
       - trading-network
+    labels:
+      - "service.name=trading-engine"
   # API Gateway Service
   api-gateway:
     build:
@@ -118,6 +120,7 @@ services:
     volumes:
       - ./infrastructure/logstash/pipeline:/usr/share/logstash/pipeline
       - ./infrastructure/logstash/config:/usr/share/logstash/config
+      # - ./infrastructure/logstash/config:/usr/share/logstash/data # For persistent data
     networks:
       - trading-network
     depends_on:

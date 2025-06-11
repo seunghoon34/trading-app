@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/seunghoon34/trading-app/services/trading-engine/internal/logger"
 )
 
 func makeAlpacaRequest(method, url string, payload io.Reader) (*http.Response, error) {
@@ -53,6 +54,12 @@ func CreateOrder(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&OrderData); err != nil {
+		logger.WithFields(map[string]interface{}{
+			"account_id": OrderData.AccountID,
+			"symbol":     OrderData.Symbol,
+			"error":      err.Error(),
+			"action":     "order_create_failed",
+		}).Error("Order creation failed")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -71,9 +78,24 @@ func CreateOrder(c *gin.Context) {
 		payload = strings.NewReader(fmt.Sprintf(`{"type":"market","time_in_force":"day","side":"%s","symbol":"%s","notional":"%s"}`, OrderData.Side, OrderData.Symbol, OrderData.Notional))
 	}
 
+	logger.WithFields(map[string]interface{}{
+		"account_id": OrderData.AccountID,
+		"symbol":     OrderData.Symbol,
+		"side":       OrderData.Side,
+		"qty":        OrderData.Qty,
+		"action":     "order_create_attempt",
+	}).Info("Order creation started")
+
 	res, err := makeAlpacaRequest("POST", url, payload)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to execute order"})
+		logger.WithFields(map[string]interface{}{
+			"account_id": OrderData.AccountID,
+			"symbol":     OrderData.Symbol,
+			"error":      err.Error(),
+			"action":     "order_create_failed",
+		}).Error("Order creation failed")
 		return
 	}
 
@@ -86,8 +108,22 @@ func GetOrder(c *gin.Context) {
 
 	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/orders/%s", accountID, orderID)
 
+	logger.WithFields(map[string]interface{}{
+		"account_id": accountID,
+		"order_id":   orderID,
+		"action":     "get_order_attempt",
+	}).Info("Get order started")
+
 	res, err := makeAlpacaRequest("GET", url, nil)
 	if err != nil {
+
+		logger.WithFields(map[string]interface{}{
+			"account_id": accountID,
+			"order_id":   orderID,
+			"error":      err.Error(),
+			"action":     "get_order_failed",
+		}).Error("Get order failed")
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to execute request"})
 		return
 	}
@@ -100,8 +136,18 @@ func GetOrders(c *gin.Context) {
 
 	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/orders", accountID)
 
+	logger.WithFields(map[string]interface{}{
+		"account_id": accountID,
+		"action":     "get_all_orders_attempt",
+	}).Info("Get all orders started")
+
 	res, err := makeAlpacaRequest("GET", url, nil)
 	if err != nil {
+		logger.WithFields(map[string]interface{}{
+			"account_id": accountID,
+			"error":      err.Error(),
+			"action":     "get_all_orders_failed",
+		}).Error("Get all orders failed")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to execute request"})
 		return
 	}
@@ -115,8 +161,20 @@ func DeleteOrder(c *gin.Context) {
 
 	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/orders/%s", accountID, orderID)
 
+	logger.WithFields(map[string]interface{}{
+		"account_id": accountID,
+		"order_id":   orderID,
+		"action":     "delete_order_attempt",
+	}).Info("Delete order started")
+
 	res, err := makeAlpacaRequest("DELETE", url, nil)
 	if err != nil {
+		logger.WithFields(map[string]interface{}{
+			"account_id": accountID,
+			"order_id":   orderID,
+			"error":      err.Error(),
+			"action":     "delete_order_failed",
+		}).Error("Delete order failed")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to execute request"})
 		return
 	}
@@ -129,8 +187,17 @@ func DeleteAllOrders(c *gin.Context) {
 
 	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/orders", accountID)
 
+	logger.WithFields(map[string]interface{}{
+		"account_id": accountID,
+		"action":     "delete_all_orders_attempt",
+	}).Info("Delete all orders started")
 	res, err := makeAlpacaRequest("DELETE", url, nil)
 	if err != nil {
+		logger.WithFields(map[string]interface{}{
+			"account_id": accountID,
+			"error":      err.Error(),
+			"action":     "delete_all_orders_failed",
+		}).Error("Delete all orders failed")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to execute request"})
 		return
 	}
