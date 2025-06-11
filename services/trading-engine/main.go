@@ -18,13 +18,13 @@ func main() {
 	})
 	r.POST("/orders", handlers.CreateOrder)
 
-	r.DELETE("/orders/:account_id", handlers.DeleteAllOrders)
+	r.DELETE("/orders", handlers.DeleteAllOrders)
 
-	r.GET("/orders/:account_id/:order_id", handlers.GetOrder)
+	r.GET("/:order_id", handlers.GetOrder)
 
-	r.GET("/orders/:account_id", handlers.GetOrders)
+	r.GET("/orders", handlers.GetOrders)
 
-	r.DELETE("/orders/:account_id/:order_id", handlers.DeleteOrder)
+	r.DELETE("/:order_id", handlers.DeleteOrder)
 
 	r.Run(":8083") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 

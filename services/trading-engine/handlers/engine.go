@@ -104,7 +104,11 @@ func CreateOrder(c *gin.Context) {
 
 func GetOrder(c *gin.Context) {
 	orderID := c.Param("order_id")
-	accountID := c.Param("account_id")
+	accountID := c.GetHeader("X-Account-ID") // ← Get from header
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Account ID header missing"})
+		return
+	}
 
 	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/orders/%s", accountID, orderID)
 
@@ -132,7 +136,11 @@ func GetOrder(c *gin.Context) {
 }
 
 func GetOrders(c *gin.Context) {
-	accountID := c.Param("account_id")
+	accountID := c.GetHeader("X-Account-ID") // ← Get from header
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Account ID header missing"})
+		return
+	}
 
 	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/orders", accountID)
 
@@ -157,7 +165,11 @@ func GetOrders(c *gin.Context) {
 
 func DeleteOrder(c *gin.Context) {
 	orderID := c.Param("order_id")
-	accountID := c.Param("account_id")
+	accountID := c.GetHeader("X-Account-ID") // ← Get from header
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Account ID header missing"})
+		return
+	}
 
 	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/orders/%s", accountID, orderID)
 
@@ -183,7 +195,11 @@ func DeleteOrder(c *gin.Context) {
 }
 
 func DeleteAllOrders(c *gin.Context) {
-	accountID := c.Param("account_id")
+	accountID := c.GetHeader("X-Account-ID") // ← Get from header
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Account ID header missing"})
+		return
+	}
 
 	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/orders", accountID)
 

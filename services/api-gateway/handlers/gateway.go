@@ -79,6 +79,7 @@ func ForwardToMarketDataService(c *gin.Context) {
 
 func ForwardToTradingService(c *gin.Context) {
 	path := c.Param("path")
+	accountID, _ := c.Get("account_id")
 	targetUrl := "http://trading-engine:8083" + path
 	if c.Request.URL.RawQuery != "" {
 		targetUrl += "?" + c.Request.URL.RawQuery
@@ -91,7 +92,7 @@ func ForwardToTradingService(c *gin.Context) {
 	}
 
 	req.Header = c.Request.Header
-
+	req.Header.Set("X-Account-ID", accountID.(string))
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
