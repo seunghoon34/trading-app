@@ -1,0 +1,38 @@
+# Use official Go image as base
+FROM golang:1.23-alpine AS builder
+
+# Set working directory inside the container
+WORKDIR /app
+
+# Copy go.mod and go.sum files first (for dependency caching)
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy the rest of your source code
+COPY . .
+
+# Build the Go binary
+RUN go build -o main .
+
+# Second stage - smaller runtime image
+FROM alpine:latest
+
+# Install ca-certificates (needed for HTTPS requests)
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+
+# Copy the binary from builder stage
+COPY --from=builder /app/main .
+
+# Expose port 8084
+EXPOSE 8087
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8087/health || exit 1
+
+# Command to run when container starts
+CMD ["./main"]

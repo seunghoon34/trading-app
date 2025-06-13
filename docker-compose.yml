@@ -77,7 +77,60 @@ services:
       - trading-network
     labels:
       - "service.name=trading-engine"
-  # API Gateway Service
+  
+  event-listener:
+    build: ./services/event-listener
+    container_name: event-listener
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8085:8085"
+    environment:
+      - ALPACA_API_KEY=${ALPACA_API_KEY}
+      - ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}
+      - ALPACA_ACCOUNT_ID=${ALPACA_API_KEY}
+    networks:
+      - trading-network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: trading-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - trading-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./services/notification
+      dockerfile: Dockerfile
+    container_name: notification-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "8087:8087"
+    environment:
+      - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017
+      - MONGODB_DATABASE=${MONGO_DATABASE}
+    networks:
+      - trading-network
+  # API Gateway Serviceå
   api-gateway:
     build:
       context: ./services/api-gateway
@@ -94,18 +147,18 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     networks:
       - trading-network
-  event-listener:
-    build: ./services/event-listener
-    container_name: event-listener
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
     depends_on:
-      kafka:
-        condition: service_healthy
+      - mongodb
     ports:
-      - "8085:8085"
+      - "8088:8081"
     environment:
-      - ALPACA_API_KEY=${ALPACA_API_KEY}
-      - ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}
-      - ALPACA_ACCOUNT_ID=${ALPACA_API_KEY}
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/
+      ME_CONFIG_BASICAUTH: false
     networks:
       - trading-network
   kafka:
@@ -252,6 +305,8 @@ networks:
 # Define volumes for data persistence
 volumes:
   postgres_data:
+    driver: local
+  mongodb_data:         
     driver: local
   elasticsearch_data:
     driver: local
