@@ -94,6 +94,20 @@ services:
       - JWT_SECRET=${JWT_SECRET}
     networks:
       - trading-network
+  event-listener:
+    build: ./services/event-listener
+    container_name: event-listener
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8085:8085"
+    environment:
+      - ALPACA_API_KEY=${ALPACA_API_KEY}
+      - ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}
+      - ALPACA_ACCOUNT_ID=${ALPACA_API_KEY}
+    networks:
+      - trading-network
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     container_name: kafka
@@ -149,7 +163,7 @@ services:
     depends_on:
       - kafka
     ports:
-      - "8085:8080"
+      - "8086:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: trading-platform
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
