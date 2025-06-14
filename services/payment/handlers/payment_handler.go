@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -8,8 +9,11 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+
+	rdb "github.com/seunghoon34/trading-app/services/payment/redis"
 )
 
 type ACHDetails struct {
@@ -65,6 +69,23 @@ func createACHDetails(account_id string) (*ACHDetails, error) {
 }
 
 func retrieveACHDetails(account_id string) (*ACHDetails, error) {
+
+	// Try cache first
+	cacheKey := fmt.Sprintf("ach_details:%s", account_id)
+
+	cached, err := rdb.Client.Get(context.Background(), cacheKey).Result()
+	if err == nil {
+		// Cache hit - unmarshal and return
+		var ach_details ACHDetails
+		if err := json.Unmarshal([]byte(cached), &ach_details); err == nil {
+			fmt.Println("Cache hit for ACH details")
+			return &ach_details, nil
+		}
+	}
+
+	// Cache miss - fetch from API
+	fmt.Println("Cache miss - fetching from API")
+
 	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/accounts/%s/ach_relationships", account_id)
 	fmt.Printf("Making request to: %s\n", url)
 	res, err := makeAlpacaRequest("GET", url, nil)
@@ -96,8 +117,15 @@ func retrieveACHDetails(account_id string) (*ACHDetails, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to create ACH details: %w", err)
 		}
+		// Cache the result for 1 hour
+		achJSON, _ := json.Marshal(ach_relationship)
+		rdb.Client.Set(context.Background(), cacheKey, achJSON, time.Hour)
 		return ach_relationship, nil
 	}
+
+	// // Cache the result for 1 hour
+	achJSON, _ := json.Marshal(ach_relationships[0])
+	rdb.Client.Set(context.Background(), cacheKey, achJSON, time.Hour)
 
 	// Return the first one (or you could add logic to pick a specific one)
 	return &ach_relationships[0], nil
