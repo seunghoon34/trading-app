@@ -27,7 +27,10 @@ func CreateAlpacaAccount(email string, firstName string, lastName string) (*Alpa
 
 	defer res.Body.Close()
 
-	body, _ := io.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
 	var account_id AlpacaAccount
 
 	if err := json.Unmarshal(body, &account_id); err != nil {
