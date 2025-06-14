@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/seunghoon34/trading-app/services/user-management/internal/alpaca"
 	"github.com/seunghoon34/trading-app/services/user-management/models"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -61,29 +61,37 @@ func Register(c *gin.Context, db *pgxpool.Pool) {
 		return
 	}
 
-	var existingID int
+	var exists bool
+	err = db.QueryRow(context.Background(), "SELECT EXISTS(SELECT 1 FROM users WHERE email=$1)", user.Email).Scan(&exists)
 
-	err = db.QueryRow(context.Background(),
-		"SELECT id FROM users WHERE email=$1", user.Email).Scan(&existingID)
-	if err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
-		return
-	} else if err != pgx.ErrNoRows {
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	if exists {
+		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
 		return
 	}
 	// If we reach here, it means the user does not exist, and we can proceed to insert
 	// Insert user into database
+	alpacaAccount, err := alpaca.CreateAlpacaAccount(user.Email, user.FirstName, user.LastName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create Alpaca account"})
+		return
+	}
+	user.AlpacaAccountID = alpacaAccount.Id
+
 	query := `
-        INSERT INTO users (first_name, last_name, email, password, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, NOW(), NOW())
+        INSERT INTO users (first_name, alpaca_account_id, last_name, email, password, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
         RETURNING id, created_at, updated_at`
 
 	var id int
 	var createdAt, updatedAt time.Time
 
 	err = db.QueryRow(context.Background(), query,
-		user.FirstName, user.LastName, user.Email, string(hashedPassword)).
+		user.FirstName, user.AlpacaAccountID, user.LastName, user.Email, string(hashedPassword)).
 		Scan(&id, &createdAt, &updatedAt)
 
 	if err != nil {
