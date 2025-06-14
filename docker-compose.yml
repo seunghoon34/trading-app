@@ -77,7 +77,20 @@ services:
       - trading-network
     labels:
       - "service.name=trading-engine"
-  
+  payment:
+    build:
+      context: ./services/payment
+      dockerfile: Dockerfile
+    container_name: payment-service
+    environment:
+      - ALPACA_API_KEY=${ALPACA_API_KEY}
+      - ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}
+    ports:
+      - "8088:8088"
+    networks:
+      - trading-network
+
+  # Event Listener Service
   event-listener:
     build: ./services/event-listener
     container_name: event-listener
