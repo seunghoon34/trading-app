@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/seunghoon34/trading-app/services/notification/handlers"
 	"github.com/seunghoon34/trading-app/services/notification/internal/service"
 )
 
@@ -38,6 +39,8 @@ func main() {
 			"timestamp": time.Now().Format(time.RFC3339),
 		})
 	})
+
+	r.GET("/notifications/:account_id", handlers.GetNotification(notificationService))
 
 	// Service statistics endpoint
 	r.GET("/stats", func(c *gin.Context) {

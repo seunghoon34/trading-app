@@ -14,7 +14,7 @@ import (
 // NotificationService handles consuming trade events and storing them
 type NotificationService struct {
 	kafkaConsumer *kafka.Consumer
-	mongoClient   *mongodb.Client
+	MongoClient   *mongodb.Client
 	ctx           context.Context
 	cancel        context.CancelFunc
 	wg            sync.WaitGroup
@@ -40,7 +40,7 @@ func NewNotificationService() (*NotificationService, error) {
 
 	return &NotificationService{
 		kafkaConsumer: kafkaConsumer,
-		mongoClient:   mongoClient,
+		MongoClient:   mongoClient,
 		ctx:           ctx,
 		cancel:        cancel,
 	}, nil
@@ -80,7 +80,7 @@ func (n *NotificationService) handleTradeEvent(kafkaEvent *models.KafkaTradeEven
 	tradeEvent := kafkaEvent.ToTradeEvent()
 
 	// Store in MongoDB
-	if err := n.mongoClient.StoreTradeEvent(tradeEvent); err != nil {
+	if err := n.MongoClient.StoreTradeEvent(tradeEvent); err != nil {
 		log.Printf("❌ Failed to store trade event in MongoDB: %v", err)
 		return err
 	}
@@ -155,7 +155,7 @@ func (n *NotificationService) Stop() {
 	}
 
 	// Close MongoDB client
-	if err := n.mongoClient.Close(); err != nil {
+	if err := n.MongoClient.Close(); err != nil {
 		log.Printf("⚠️ Error closing MongoDB client: %v", err)
 	}
 

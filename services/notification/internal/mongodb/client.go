@@ -18,7 +18,7 @@ import (
 type Client struct {
 	client     *mongo.Client
 	database   *mongo.Database
-	collection *mongo.Collection
+	Collection *mongo.Collection
 }
 
 // NewClient creates a new MongoDB client
@@ -60,7 +60,7 @@ func NewClient() (*Client, error) {
 	return &Client{
 		client:     client,
 		database:   database,
-		collection: collection,
+		Collection: collection,
 	}, nil
 }
 
@@ -70,7 +70,7 @@ func (c *Client) StoreTradeEvent(event *models.TradeEvent) error {
 	defer cancel()
 
 	// Insert the event
-	result, err := c.collection.InsertOne(ctx, event)
+	result, err := c.Collection.InsertOne(ctx, event)
 	if err != nil {
 		return fmt.Errorf("failed to store trade event: %w", err)
 	}
@@ -94,7 +94,7 @@ func (c *Client) GetTradeEventsByAccount(accountID string, limit int64) ([]*mode
 	opts := options.Find().SetLimit(limit).SetSort(map[string]interface{}{"timestamp": -1})
 
 	// Find events
-	cursor, err := c.collection.Find(ctx, filter, opts)
+	cursor, err := c.Collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find trade events: %w", err)
 	}
@@ -121,7 +121,7 @@ func (c *Client) GetTradeEventsByOrder(orderID string) ([]*models.TradeEvent, er
 	opts := options.Find().SetSort(map[string]interface{}{"timestamp": 1})
 
 	// Find events
-	cursor, err := c.collection.Find(ctx, filter, opts)
+	cursor, err := c.Collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find trade events for order: %w", err)
 	}
