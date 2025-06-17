@@ -77,7 +77,7 @@ func Register(c *gin.Context, db *pgxpool.Pool) {
 	// Insert user into database
 	alpacaAccount, err := alpaca.CreateAlpacaAccount(user.Email, user.FirstName, user.LastName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create Alpaca account"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create Alpaca account: " + err.Error()})
 		return
 	}
 	user.AlpacaAccountID = alpacaAccount.Id
@@ -95,7 +95,7 @@ func Register(c *gin.Context, db *pgxpool.Pool) {
 		Scan(&id, &createdAt, &updatedAt)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create use: " + err.Error()})
 		return
 	}
 
@@ -122,7 +122,11 @@ func Login(c *gin.Context, db *pgxpool.Pool) {
 		return
 	}
 	var password string
-	err := db.QueryRow(context.Background(), "SELECT password FROM users WHERE email=$1", loginData.Email).Scan(&password)
+	var alpacaAccountID string
+	err := db.QueryRow(context.Background(),
+		"SELECT password, alpaca_account_id FROM users WHERE email=$1",
+		loginData.Email).Scan(&password, &alpacaAccountID)
+
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "incorrect password or email"})
 		return
@@ -133,7 +137,7 @@ func Login(c *gin.Context, db *pgxpool.Pool) {
 		return
 	}
 
-	accountID := "337392e2-135e-4b75-b2ae-55cd2749a11a"
+	accountID := alpacaAccountID
 	email := loginData.Email // Get email from login request
 
 	// Generate JWT token

@@ -12,6 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type BuyingPower struct {
+	BuyingPower string `json:"buying_power"`
+}
+
 type Position struct {
 	Symbol                 string `json:"symbol"`
 	Quantity               string `json:"qty"`
@@ -138,9 +142,44 @@ func GetPositions(c *gin.Context) {
 		return
 	}
 
+	accountURL := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/account", accountID)
+	res, err := makeAlpacaRequest("GET", accountURL, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch account details"})
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read account response"})
+		return
+	}
+
+	// Check if the API call was successful
+	if res.StatusCode != http.StatusOK {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":       "Failed to fetch account details from Alpaca",
+			"status_code": res.StatusCode,
+			"response":    string(body),
+		})
+		return
+	}
+
+	var buyingPower BuyingPower
+	if err := json.Unmarshal(body, &buyingPower); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":        "Failed to parse account details",
+			"raw_response": string(body),
+			"parse_error":  err.Error(),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"account_id": accountID,
 		"positions":  positions,
+		"Cash":       buyingPower.BuyingPower,
 	})
 }
 

@@ -29,9 +29,9 @@ func InitMongoDB() {
 	var uri string
 	if mongoUser != "" && mongoPassword != "" {
 		// Connect to admin database since these are root credentials
-		uri = fmt.Sprintf("mongodb://%s:%s@localhost:27017/admin", mongoUser, mongoPassword)
+		uri = fmt.Sprintf("mongodb://%s:%s@mongodb:27017/admin", mongoUser, mongoPassword)
 	} else {
-		uri = "mongodb://localhost:27017"
+		uri = "mongodb://mongodb:27017"
 	}
 
 	// Connect to MongoDB

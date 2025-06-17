@@ -75,7 +75,7 @@ func callTradingService(orderReq OrderRequest) (map[string]interface{}, error) {
 	// Get trading service URL from environment variable
 	tradingServiceURL := os.Getenv("TRADING_SERVICE_URL")
 	if tradingServiceURL == "" {
-		tradingServiceURL = "http://localhost:8083" // Default for local development
+		tradingServiceURL = "http://trading-engine:8083" // Default for local development
 	}
 
 	jsonData, err := json.Marshal(orderReq)
