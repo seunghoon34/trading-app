@@ -38,6 +38,8 @@ func main() {
 	// Admin route
 	r.GET("/api/portfolios", handlers.GetAllPortfolios) // Get all portfolios
 
+	r.POST("/portfolio/purchase", handlers.PurchasePortfolio)
+
 	log.Println("Investment Strategy Service starting on :8089")
 	r.Run(":8089") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

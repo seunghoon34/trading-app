@@ -142,6 +142,20 @@ services:
       - MONGODB_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017
       - MONGODB_DATABASE=${MONGO_DATABASE}
     networks:
+      - trading-network 
+    
+  crewai-portfolio:
+    build: ./services/crewai-portfolio
+    container_name: crewai-portfolio
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME}
+      - SERPER_API_KEY=${SERPER_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    networks:
       - trading-network
   # API Gateway Serviceå
   api-gateway:

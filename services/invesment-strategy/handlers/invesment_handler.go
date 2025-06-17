@@ -77,7 +77,7 @@ func CreatePortfolio(c *gin.Context) {
 		return
 	} else if err != mongodriver.ErrNoDocuments {
 		// Some other error occurred
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check existing portfolio"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check existing portfolio " + err.Error()})
 		return
 	}
 
