@@ -147,11 +147,71 @@ func Login(c *gin.Context, db *pgxpool.Pool) {
 		return
 	}
 
-	// Return token and user info
+	// Set HTTP-only cookie with the token
+	c.SetCookie(
+		"auth_token", // cookie name
+		token,        // cookie value
+		24*60*60,     // max age in seconds (24 hours)
+		"/",          // path
+		"",           // domain (empty means current domain)
+		false,        // secure (set to true in production with HTTPS)
+		true,         // httpOnly
+	)
+
+	// Return user info without the token
 	c.JSON(http.StatusOK, gin.H{
 		"message":    "User login successful",
-		"token":      token,
 		"account_id": accountID,
 		"email":      email,
+	})
+}
+
+func Logout(c *gin.Context) {
+	// Clear the auth cookie
+	c.SetCookie(
+		"auth_token", // cookie name
+		"",           // empty value
+		-1,           // max age (-1 to delete)
+		"/",          // path
+		"",           // domain
+		false,        // secure
+		true,         // httpOnly
+	)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "User logged out successfully",
+	})
+}
+
+func GetCurrentUser(c *gin.Context, db *pgxpool.Pool) {
+	// Get user info from JWT middleware context
+	accountID, exists := c.Get("account_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	email, exists := c.Get("email")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+		return
+	}
+
+	// Get additional user info from database
+	var firstName, lastName string
+	err := db.QueryRow(context.Background(),
+		"SELECT first_name, last_name FROM users WHERE email=$1",
+		email).Scan(&firstName, &lastName)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"account_id": accountID,
+		"email":      email,
+		"first_name": firstName,
+		"last_name":  lastName,
 	})
 }

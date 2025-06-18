@@ -1,13 +1,28 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 
-const LoginForm = ({ onLogin }) => {
+const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Just set auth to true without any validation
-    onLogin();
+    setError('');
+    setLoading(true);
+
+    try {
+      const result = await login(email, password);
+      if (!result.success) {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -24,6 +39,7 @@ const LoginForm = ({ onLogin }) => {
           onChange={(e) => setEmail(e.target.value)}
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           placeholder="you@example.com"
+          required
         />
       </div>
 
@@ -39,6 +55,7 @@ const LoginForm = ({ onLogin }) => {
           onChange={(e) => setPassword(e.target.value)}
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           placeholder="••••••••"
+          required
         />
       </div>
 
@@ -62,12 +79,20 @@ const LoginForm = ({ onLogin }) => {
         </button>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
+
       {/* Submit Button */}
       <button
         type="submit"
-        className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+        disabled={loading}
+        className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Sign in
+        {loading ? 'Signing in...' : 'Sign in'}
       </button>
 
       {/* Social Login */}
@@ -121,9 +146,7 @@ const LoginForm = ({ onLogin }) => {
         </div>
       </div>
 
-      <div className="text-center text-sm text-gray-500 mt-4">
-        <p>You can enter anything - no real validation</p>
-      </div>
+
     </form>
   );
 };

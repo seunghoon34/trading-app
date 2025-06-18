@@ -29,6 +29,7 @@ func main() {
 	protected := r.Group("/api/v1")
 	protected.Use(middleware.JWTMiddleware()) // ← Add JWT middleware
 	{
+		protected.Any("/user/*path", handlers.ForwardToAuthService)
 		protected.Any("/market/*path", handlers.ForwardToMarketDataService)
 		protected.Any("/trading/*path", handlers.ForwardToTradingService)
 		protected.Any("/portfolio/*path", handlers.ForwardToPortfolioService)

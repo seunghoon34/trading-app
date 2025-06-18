@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-// JWT Claims structure (must match user-management service)
+// JWT Claims structure
 type Claims struct {
 	AccountID string `json:"account_id"`
 	Email     string `json:"email"`
@@ -59,7 +59,7 @@ func JWTMiddleware() gin.HandlerFunc {
 
 		// Extract claims
 		if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-			// Store account_id in context for forwarding handlers
+			// Store account_id and email in context
 			c.Set("account_id", claims.AccountID)
 			c.Set("email", claims.Email)
 

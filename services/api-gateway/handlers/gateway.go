@@ -30,6 +30,11 @@ func ForwardToAuthService(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
+	// Copy cookies from response back to client
+	for _, cookie := range resp.Cookies() {
+		c.SetCookie(cookie.Name, cookie.Value, cookie.MaxAge, cookie.Path, cookie.Domain, cookie.Secure, cookie.HttpOnly)
+	}
+
 	// Read response and send back to client
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

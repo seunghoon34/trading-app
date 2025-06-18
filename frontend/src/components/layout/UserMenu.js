@@ -1,7 +1,20 @@
 import React from 'react';
 
-const UserMenu = ({ isOpen, onClose, onLogout }) => {
+const UserMenu = ({ isOpen, onClose, onLogout, user }) => {
   if (!isOpen) return null;
+
+  // Generate user initials
+  const getUserInitials = () => {
+    if (!user) return 'U';
+    const firstInitial = user.first_name ? user.first_name.charAt(0).toUpperCase() : '';
+    const lastInitial = user.last_name ? user.last_name.charAt(0).toUpperCase() : '';
+    return firstInitial + lastInitial || 'U';
+  };
+
+  const getFullName = () => {
+    if (!user) return 'User';
+    return `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User';
+  };
 
   return (
     <>
@@ -19,11 +32,11 @@ const UserMenu = ({ isOpen, onClose, onLogout }) => {
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-white font-semibold">
-                JD
+                {getUserInitials()}
               </div>
               <div>
-                <div className="font-medium text-xl text-gray-900">John Doe</div>
-                <div className="text-sm text-gray-500">john@example.com</div>
+                <div className="font-medium text-xl text-gray-900">{getFullName()}</div>
+                <div className="text-sm text-gray-500">{user?.email || 'No email'}</div>
               </div>
             </div>
           </div>

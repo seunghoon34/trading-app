@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/seunghoon34/trading-app/services/user-management/config"
 	"github.com/seunghoon34/trading-app/services/user-management/handlers"
+	"github.com/seunghoon34/trading-app/services/user-management/middleware"
 )
 
 func main() {
@@ -32,6 +33,14 @@ func main() {
 	})
 	r.POST("/register", func(c *gin.Context) {
 		handlers.Register(c, db)
+	})
+	r.POST("/logout", func(c *gin.Context) {
+		handlers.Logout(c)
+	})
+
+	// Protected route
+	r.GET("/me", middleware.JWTMiddleware(), func(c *gin.Context) {
+		handlers.GetCurrentUser(c, db)
 	})
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")

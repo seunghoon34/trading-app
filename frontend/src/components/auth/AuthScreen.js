@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
 
-const AuthScreen = ({ onLogin }) => {
+const AuthScreen = () => {
   const [isLogin, setIsLogin] = useState(true);
 
   return (
@@ -26,9 +26,9 @@ const AuthScreen = ({ onLogin }) => {
         {/* Form Container */}
         <div className="px-8 pb-8">
           {isLogin ? (
-            <LoginForm onLogin={onLogin} />
+            <LoginForm />
           ) : (
-            <RegisterForm onRegister={onLogin} />
+            <RegisterForm />
           )}
 
           {/* Toggle between login and register */}

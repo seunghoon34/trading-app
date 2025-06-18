@@ -16,8 +16,16 @@ const NavItem = ({ icon, label, isActive, onClick }) => (
 );
 
 // Sidebar Component
-const Sidebar = ({ currentPage, setCurrentPage, onLogout }) => {
+const Sidebar = ({ currentPage, setCurrentPage, onLogout, user }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  // Generate user initials
+  const getUserInitials = () => {
+    if (!user) return 'U';
+    const firstInitial = user.first_name ? user.first_name.charAt(0).toUpperCase() : '';
+    const lastInitial = user.last_name ? user.last_name.charAt(0).toUpperCase() : '';
+    return firstInitial + lastInitial || 'U';
+  };
 
   return (
     <div className="w-20 bg-gray-50 border-r border-gray-200 flex flex-col items-center py-5">
@@ -50,7 +58,7 @@ const Sidebar = ({ currentPage, setCurrentPage, onLogout }) => {
           onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
           className="w-12 h-12 bg-white border border-gray-200 rounded-full flex items-center justify-center text-sm font-semibold cursor-pointer hover:bg-gray-50"
         >
-          JD
+          {getUserInitials()}
         </button>
 
         <UserMenu
@@ -60,6 +68,7 @@ const Sidebar = ({ currentPage, setCurrentPage, onLogout }) => {
             setIsUserMenuOpen(false);
             onLogout();
           }}
+          user={user}
         />
       </div>
     </div>
