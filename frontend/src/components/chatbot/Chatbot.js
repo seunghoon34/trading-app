@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Chatbot = () => {
+  const { isAuthenticated } = useAuth();
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([
     {
@@ -14,6 +16,9 @@ const Chatbot = () => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
+  // API base URL
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -22,7 +27,7 @@ const Chatbot = () => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!message.trim() || loading) return;
+    if (!message.trim() || loading || !isAuthenticated) return;
     
     const userMessage = { role: 'user', content: message };
     const newMessages = [...messages, userMessage];
@@ -31,15 +36,19 @@ const Chatbot = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3002/chat', {
+      const response = await fetch(`${API_BASE_URL}/api/v1/zeus/chat`, {
         method: 'POST',
+        credentials: 'include', // Include cookies for authentication
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: newMessages,
-          user_id: 'f7f2e0c2-2c40-4d4e-87b8-390bd40ae2dc',
           url: 'https://72ec-2001-fb1-41-a82a-2dae-45ee-bdf5-94b5.ngrok-free.app'
         })
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
       const data = await response.json();
       setMessages([...newMessages, { role: 'assistant', content: data.response }]);
@@ -60,6 +69,18 @@ const Chatbot = () => {
       handleSend();
     }
   };
+
+  // Show authentication required message if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="h-full flex flex-col max-h-screen items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Authentication Required</h2>
+          <p className="text-gray-600">Please log in to use the Zeus AI assistant.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col max-h-screen">

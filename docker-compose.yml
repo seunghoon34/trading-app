@@ -176,7 +176,26 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     networks:
       - trading-network
-  # API Gateway Serviceå
+  
+  # Zeus Backend Service (AI Chat Assistant)
+  zeus-backend:
+    build:
+      context: ./services/zeus-backend
+      dockerfile: dockerfile
+    container_name: zeus-backend-service
+    ports:
+      - "3002:3002"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    networks:
+      - trading-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3002/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  # API Gateway Service
   api-gateway:
     build:
       context: ./services/api-gateway
@@ -189,6 +208,7 @@ services:
       - market-data
       - trading-engine
       - portfolio
+      - zeus-backend
     environment:
       - JWT_SECRET=${JWT_SECRET}
     networks:
