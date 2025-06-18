@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import ViewAllOrdersPopup from '../popups/ViewAllOrdersPopup';
 import NewOrderPopup from '../popups/NewOrderPopup';
 
-const RecentOrders = () => {
+const RecentOrders = ({ onOrderComplete }) => {
   const { isAuthenticated } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -71,22 +71,26 @@ const RecentOrders = () => {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'filled':
-        return 'text-green-600';
+        return 'bg-green-100 text-green-800';
       case 'pending':
       case 'submitted':
       case 'accepted':
-        return 'text-yellow-600';
+        return 'bg-yellow-100 text-yellow-800';
       case 'cancelled':
       case 'rejected':
-        return 'text-red-600';
+        return 'bg-red-100 text-red-800';
       default:
-        return 'text-gray-600';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const handleOrderPlaced = () => {
     // Refresh the orders list after a new order is placed
     fetchRecentOrders();
+    // Also refresh the entire dashboard if callback is provided
+    if (onOrderComplete) {
+      onOrderComplete();
+    }
   };
 
   if (!isAuthenticated) {
@@ -163,8 +167,10 @@ const RecentOrders = () => {
                   </span>
                 </div>
                 <div>{order.qty || order.notional || 'N/A'}</div>
-                <div className={`font-medium ${getStatusColor(order.status)}`}>
-                  {order.status || 'N/A'}
+                <div>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
+                    {order.status || 'N/A'}
+                  </span>
                 </div>
               </div>
             ))

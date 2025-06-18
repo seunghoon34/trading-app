@@ -4,7 +4,7 @@ import RecentOrders from './RecentOrders';
 import Positions from './Positions';
 import MarketData from './MarketData';
 
-const Dashboard = () => {
+const Dashboard = ({ onOrderComplete }) => {
   return (
     <div className="h-full flex flex-col p-6 gap-4">
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
@@ -13,7 +13,7 @@ const Dashboard = () => {
           <div className="flex-1 flex flex-col min-h-0">
             <PortfolioPerformance />
             <div className="flex-1 min-h-0 flex flex-col">
-              <RecentOrders />
+              <RecentOrders onOrderComplete={onOrderComplete} />
             </div>
           </div>
         </div>

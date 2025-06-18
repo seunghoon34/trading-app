@@ -145,6 +145,52 @@ const apiService = {
   },
 };
 
+// Loading Screen Component for Portfolio Generation
+const LoadingScreen = () => {
+  return (
+    <div className="space-y-8 text-center py-12">
+      {/* Animated Icon */}
+      <div className="relative mx-auto w-24 h-24">
+        <div className="absolute inset-0 rounded-full border-4 border-purple-200"></div>
+        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-500 animate-spin"></div>
+        <div className="absolute inset-2 rounded-full border-4 border-transparent border-t-blue-500 animate-spin" style={{ animationDirection: 'reverse' }}></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <svg className="w-8 h-8 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Loading Text */}
+      <div className="space-y-2">
+        <h3 className="text-xl font-bold text-gray-800">Generating Your Portfolio</h3>
+        <p className="text-gray-600">Our AI is analyzing your preferences and market data...</p>
+      </div>
+
+      {/* Progress Animation */}
+      <div className="max-w-md mx-auto">
+        <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
+          <div className="bg-gradient-to-r from-purple-500 to-blue-500 h-full rounded-full animate-pulse"></div>
+        </div>
+      </div>
+
+      {/* Fun Facts */}
+      <div className="bg-purple-50 rounded-lg p-4 max-w-md mx-auto">
+        <p className="text-sm text-purple-800">
+          💡 <strong>Did you know?</strong> Our AI considers over 100 market factors to create your personalized portfolio
+        </p>
+      </div>
+
+      {/* Loading Message */}
+      <div className="text-center">
+        <p className="text-gray-500 text-sm">
+          Please wait while we create your personalized portfolio...
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // Question Section Component
 const QuestionSection = ({ title, options, selected, onSelect, description }) => {
   return (
@@ -253,7 +299,7 @@ const PortfolioDisplay = ({ portfolio, explanation, onRegenerate, onContinue, lo
 };
 
 // Purchase Result Component
-const PurchaseResult = ({ result, onClose }) => {
+const PurchaseResult = ({ result, onClose, onPurchaseComplete }) => {
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -306,7 +352,10 @@ const PurchaseResult = ({ result, onClose }) => {
       </div>
 
       <button
-        onClick={onClose}
+        onClick={() => {
+          onPurchaseComplete && onPurchaseComplete();
+          onClose();
+        }}
         className="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg font-semibold hover:transform hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
       >
         Close
@@ -315,9 +364,9 @@ const PurchaseResult = ({ result, onClose }) => {
   );
 };
 
-const PandoraPopup = ({ onClose }) => {
+const PandoraPopup = ({ onClose, onPurchaseComplete }) => {
   const { user } = useAuth();
-  const [currentStep, setCurrentStep] = useState('loading'); // loading, riskProfile, editProfile, portfolio, purchase, complete
+  const [currentStep, setCurrentStep] = useState('loading'); // loading, riskProfile, editProfile, portfolioGenerating, portfolio, purchase, complete
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [existingRiskProfile, setExistingRiskProfile] = useState(null);
@@ -502,6 +551,10 @@ const PandoraPopup = ({ onClose }) => {
         await apiService.createRiskProfile(apiFormData);
       }
 
+      // Switch to portfolio generating screen
+      setCurrentStep('portfolioGenerating');
+      setLoading(false); // Reset loading for the button
+
       // Generate portfolio
       const portfolioResponse = await apiService.generatePortfolio(apiFormData);
       setGeneratedPortfolio(portfolioResponse);
@@ -510,6 +563,7 @@ const PandoraPopup = ({ onClose }) => {
     } catch (error) {
       console.error('Error:', error);
       setError(error.message || 'An error occurred. Please try again.');
+      setCurrentStep('riskProfile'); // Go back to form on error
     } finally {
       setLoading(false);
     }
@@ -570,8 +624,12 @@ const PandoraPopup = ({ onClose }) => {
       );
     }
 
+    if (currentStep === 'portfolioGenerating') {
+      return <LoadingScreen />;
+    }
+
     if (currentStep === 'complete') {
-      return <PurchaseResult result={purchaseResult} onClose={onClose} />;
+      return <PurchaseResult result={purchaseResult} onClose={onClose} onPurchaseComplete={onPurchaseComplete} />;
     }
 
     if (currentStep === 'portfolio') {
@@ -698,13 +756,23 @@ const PandoraPopup = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={currentStep === 'portfolioGenerating' ? undefined : (e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="relative p-6 text-center border-b border-gray-100">
           <button
-            onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+            onClick={currentStep === 'portfolioGenerating' ? undefined : onClose}
+            disabled={currentStep === 'portfolioGenerating'}
+            className={`absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+              currentStep === 'portfolioGenerating' 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700 cursor-pointer'
+            }`}
           >
             ×
           </button>
@@ -714,6 +782,8 @@ const PandoraPopup = ({ onClose }) => {
           <p className="text-sm text-gray-600">
             {currentStep === 'portfolio' 
               ? 'Your AI-generated investment portfolio' 
+              : currentStep === 'portfolioGenerating'
+              ? 'AI is creating your personalized portfolio'
               : currentStep === 'complete'
               ? 'Portfolio purchase completed'
               : existingRiskProfile 
@@ -749,7 +819,7 @@ const PandoraPopup = ({ onClose }) => {
               disabled={loading}
               className="px-5 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg font-semibold hover:transform hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 disabled:opacity-50"
           >
-              {loading ? 'Generating...' : existingRiskProfile ? 'Continue' : 'Create Profile & Generate Portfolio'}
+              {loading ? 'Saving Profile...' : existingRiskProfile ? 'Continue' : 'Create Profile & Generate Portfolio'}
           </button>
         </div>
         )}

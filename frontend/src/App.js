@@ -12,6 +12,12 @@ const AppContent = () => {
   const { isAuthenticated, loading, logout, user } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [showPandoraPopup, setShowPandoraPopup] = useState(false);
+  const [dashboardKey, setDashboardKey] = useState(0); // Key to force Dashboard re-render
+
+  // Function to refresh dashboard after portfolio purchase or new order
+  const handleDashboardRefresh = () => {
+    setDashboardKey(prev => prev + 1);
+  };
 
   if (loading) {
     return (
@@ -39,13 +45,16 @@ const AppContent = () => {
         
         {/* Page Content */}
         <div className="flex-1 overflow-hidden">
-          {currentPage === 'dashboard' ? <Dashboard /> : <Chatbot />}
+          {currentPage === 'dashboard' ? <Dashboard key={dashboardKey} onOrderComplete={handleDashboardRefresh} /> : <Chatbot />}
         </div>
       </div>
 
       {/* Pandora Popup */}
       {showPandoraPopup && (
-        <PandoraPopup onClose={() => setShowPandoraPopup(false)} />
+        <PandoraPopup 
+          onClose={() => setShowPandoraPopup(false)} 
+          onPurchaseComplete={handleDashboardRefresh}
+        />
       )}
     </div>
   );
