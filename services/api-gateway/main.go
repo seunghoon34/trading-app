@@ -33,7 +33,8 @@ func main() {
 		protected.Any("/market/*path", handlers.ForwardToMarketDataService)
 		protected.Any("/trading/*path", handlers.ForwardToTradingService)
 		protected.Any("/portfolio/*path", handlers.ForwardToPortfolioService)
-		protected.Any("/investment/*path", handlers.ForwardToInvestmentStrategy)
+		protected.Any("/investment-strategy/*path", handlers.ForwardToInvestmentStrategy)
+		protected.Any("/crewai-portfolio/*path", handlers.ForwardToCrewAIPortfolio)
 		protected.Any("/payment/*path", handlers.ForwardToPaymentService)
 	}
 
