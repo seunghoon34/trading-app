@@ -21,6 +21,7 @@ func main() {
 	r.GET("/value", handlers.GetPortfolioWorth)
 
 	r.GET("/performance", handlers.GetPortfolioPerformance)
+	r.GET("/performance/all", handlers.GetMultiTimeFramePerformance)
 
 	r.GET("/:symbol", handlers.GetPosition)
 

@@ -12,6 +12,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Performance struct {
+	Timestamp     []int64   `json:"timestamp"`
+	Equity        []float64 `json:"equity"`
+	ProfitLoss    []float64 `json:"profit_loss"`
+	ProfitLossPct []float64 `json:"profit_loss_pct"`
+}
+
 type BuyingPower struct {
 	BuyingPower string `json:"buying_power"`
 }
@@ -250,5 +257,86 @@ func GetPortfolioPerformance(c *gin.Context) {
 		"total_plpc":         totalPLPC,
 		"total_market_value": totalMarketValue,
 		"total_cost_basis":   totalCostBasis,
+	})
+}
+
+func GetMultiTimeFramePerformance(c *gin.Context) {
+	accountID := c.GetHeader("X-Account-ID")
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Account ID header missing"})
+		return
+	}
+
+	// Define the different periods and their parameters
+	periods := map[string]string{
+		"1D": "period=1D&timeframe=1H",
+		"1W": "period=1W&timeframe=1D",
+		"1M": "period=1M&timeframe=1W",
+		"1Y": "period=1Y&timeframe=1M",
+	}
+
+	// Channel to collect results
+	type result struct {
+		period      string
+		performance Performance
+		err         error
+	}
+
+	results := make(chan result, len(periods))
+
+	// Launch concurrent requests
+	for period, params := range periods {
+		go func(p, prms string) {
+			url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/account/portfolio/history?%s&intraday_reporting=market_hours&pnl_reset=per_day&cashflow_types=NONE", accountID, prms)
+
+			res, err := makeAlpacaRequest("GET", url, nil)
+			if err != nil {
+				results <- result{period: p, err: fmt.Errorf("failed to fetch %s performance: %w", p, err)}
+				return
+			}
+			defer res.Body.Close()
+
+			body, err := io.ReadAll(res.Body)
+			if err != nil {
+				results <- result{period: p, err: fmt.Errorf("failed to read %s response: %w", p, err)}
+				return
+			}
+
+			if res.StatusCode != http.StatusOK {
+				results <- result{period: p, err: fmt.Errorf("failed to fetch %s performance from Alpaca: status %d", p, res.StatusCode)}
+				return
+			}
+
+			var performance Performance
+			if err := json.Unmarshal(body, &performance); err != nil {
+				results <- result{period: p, err: fmt.Errorf("failed to parse %s performance: %w", p, err)}
+				return
+			}
+
+			results <- result{period: p, performance: performance, err: nil}
+		}(period, params)
+	}
+
+	// Collect all results
+	performanceData := make(map[string]Performance)
+	for i := 0; i < len(periods); i++ {
+		result := <-results
+		if result.err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Failed to fetch performance data",
+				"details": result.err.Error(),
+			})
+			return
+		}
+		performanceData[result.period] = result.performance
+	}
+
+	// Return successful response
+	c.JSON(http.StatusOK, gin.H{
+		"account_id": accountID,
+		"1D":         performanceData["1D"],
+		"1W":         performanceData["1W"],
+		"1M":         performanceData["1M"],
+		"1Y":         performanceData["1Y"],
 	})
 }
