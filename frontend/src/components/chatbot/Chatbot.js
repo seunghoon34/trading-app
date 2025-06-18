@@ -4,18 +4,11 @@ const Chatbot = () => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([
     {
-      type: 'assistant',
-      content: "Hello! I'm your investment AI assistant. I can help you with portfolio analysis, market insights, investment research, and answer questions about your holdings. What would you like to explore today?"
-    },
-    {
-      type: 'user',
-      content: "Can you analyze my current portfolio performance and suggest any optimizations?"
-    },
-    {
-      type: 'assistant',
-      content: "I'd be happy to analyze your portfolio! Based on your current holdings, I can see you have a well-diversified mix across tech, energy, and traditional markets. Here are some key observations:\n\n**Performance Summary:**\n• Your portfolio is up 12.4% overall, outperforming the S&P 500 by 3.2%\n• AAPL and MSFT are your strongest performers\n• TSLA position is currently underperforming\n\n**Optimization Suggestions:**\n1. Consider rebalancing your tech allocation (currently 65% of portfolio)\n2. Your portfolio lacks exposure to international markets\n3. Consider adding some defensive positions given current market volatility\n\nWould you like me to dive deeper into any of these areas or run a specific analysis?"
+      role: 'assistant',
+      content: "Hello! I'm your investment AI assistant Zeus. I can help you with portfolio analysis, market insights, investment research, and answer questions about your holdings. What would you like to explore today?"
     }
   ]);
+  const [loading, setLoading] = useState(false);
 
   // Add refs for auto-scroll
   const messagesEndRef = useRef(null);
@@ -28,10 +21,36 @@ const Chatbot = () => {
     }
   }, [messages]);
 
-  const handleSend = () => {
-    if (message.trim()) {
-      setMessages([...messages, { type: 'user', content: message }]);
-      setMessage('');
+  const handleSend = async () => {
+    if (!message.trim() || loading) return;
+    
+    const userMessage = { role: 'user', content: message };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setMessage('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:3002/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: newMessages,
+          user_id: 'f7f2e0c2-2c40-4d4e-87b8-390bd40ae2dc',
+          url: 'https://72ec-2001-fb1-41-a82a-2dae-45ee-bdf5-94b5.ngrok-free.app'
+        })
+      });
+      
+      const data = await response.json();
+      setMessages([...newMessages, { role: 'assistant', content: data.response }]);
+    } catch (error) {
+      console.error('Error:', error);
+      setMessages([...newMessages, { 
+        role: 'assistant', 
+        content: 'Sorry, I encountered an error while processing your request. Please try again.' 
+      }]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,8 +70,8 @@ const Chatbot = () => {
       >
         <div className="w-full max-w-4xl space-y-6">
           {messages.map((msg, index) => (
-            <div key={index} className={msg.type === 'user' ? 'flex justify-end' : ''}>
-              {msg.type === 'assistant' ? (
+            <div key={index} className={msg.role === 'user' ? 'flex justify-end' : ''}>
+              {msg.role === 'assistant' ? (
                 <div className="prose max-w-none">
                   <div className="whitespace-pre-line text-gray-800 leading-relaxed">
                     {msg.content}
@@ -67,6 +86,16 @@ const Chatbot = () => {
               )}
             </div>
           ))}
+          {loading && (
+            <div className="prose max-w-none">
+              <div className="whitespace-pre-line text-gray-800 leading-relaxed">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                  <span>Thinking...</span>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Invisible div at the bottom to scroll to */}
           <div ref={messagesEndRef} />
         </div>
@@ -85,6 +114,7 @@ const Chatbot = () => {
                 placeholder="Ask me about investments, portfolio analysis, market trends..."
                 className="flex-1 resize-none outline-none bg-transparent min-h-6 max-h-32 placeholder-gray-500"
                 rows={1}
+                disabled={loading}
                 style={{
                   lineHeight: '1.5',
                   fontSize: '16px'
@@ -94,17 +124,21 @@ const Chatbot = () => {
               {/* Send Button */}
               <button
                 onClick={handleSend}
-                disabled={!message.trim()}
+                disabled={!message.trim() || loading}
                 className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                  message.trim()
+                  message.trim() && !loading
                     ? 'bg-black text-white hover:bg-gray-800'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="m22 2-7 20-4-9-9-4z"/>
-                  <path d="M22 2 11 13"/>
-                </svg>
+                {loading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m22 2-7 20-4-9-9-4z"/>
+                    <path d="M22 2 11 13"/>
+                  </svg>
+                )}
               </button>
             </div>
           </div>

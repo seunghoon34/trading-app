@@ -1,8 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import DepositPopup from '../popups/DepositPopup';
 
 const Header = ({ onOpenPandora }) => {
+  const { isAuthenticated } = useAuth();
   const [showDepositPopup, setShowDepositPopup] = useState(false);
+  const [cashBalance, setCashBalance] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+
+  const fetchCashBalance = async () => {
+    if (!isAuthenticated) return;
+
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE_URL}/api/v1/portfolio/positions`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setCashBalance(data.Cash || '0');
+    } catch (err) {
+      console.error('Error fetching cash balance:', err);
+      setCashBalance('0');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCashBalance();
+  }, [isAuthenticated]);
+
+  const formatCurrency = (value) => {
+    if (!value) return '$0.00';
+    const numValue = parseFloat(value);
+    return isNaN(numValue) ? '$0.00' : new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(numValue);
+  };
 
   return (
     <>
@@ -20,7 +67,9 @@ const Header = ({ onOpenPandora }) => {
           {/* Cash Balance */}
           <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 text-center">
             <div className="text-xs text-gray-500 mb-1">Cash Balance</div>
-            <div className="text-base font-bold text-green-600">$45,230.50</div>
+            <div className="text-base font-bold text-green-600">
+              {loading ? '...' : formatCurrency(cashBalance)}
+            </div>
           </div>
           
           {/* Deposit Button */}
