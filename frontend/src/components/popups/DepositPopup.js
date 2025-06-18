@@ -1,25 +1,55 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 
 const DepositPopup = ({ onClose }) => {
+  const { user } = useAuth();
   const [depositAmount, setDepositAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const MAX_DEPOSIT_AMOUNT = 50000;
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
   const handleSubmit = async () => {
-    if (!depositAmount || parseFloat(depositAmount) <= 0) {
-      alert('Please enter a valid deposit amount');
+    const amount = parseFloat(depositAmount);
+    
+    if (!depositAmount || amount <= 0) {
+      setError('Please enter a valid deposit amount');
+      return;
+    }
+
+    if (amount > MAX_DEPOSIT_AMOUNT) {
+      setError(`Maximum deposit amount is $${MAX_DEPOSIT_AMOUNT.toLocaleString()}`);
       return;
     }
 
     setIsSubmitting(true);
+    setError('');
     
-    // Simulate API call
-    setTimeout(() => {
-      const amount = parseFloat(depositAmount);
-      console.log('Deposit Amount:', amount);
-      alert(`Successfully deposited $${amount.toLocaleString()}!`);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/payment/deposit/${amount}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Successfully deposited $${amount.toLocaleString()}!`);
+        onClose();
+        // Optionally trigger a refresh of the user's balance
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Deposit failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Deposit error:', err);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
       setIsSubmitting(false);
-      onClose();
-    }, 1000);
+    }
   };
 
   const handleAmountChange = (e) => {
@@ -27,10 +57,14 @@ const DepositPopup = ({ onClose }) => {
     // Only allow numbers and decimal point
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
       setDepositAmount(value);
+      // Clear error when user starts typing
+      if (error) {
+        setError('');
+      }
     }
   };
 
-  const quickAmounts = [100, 500, 1000, 5000, 10000];
+  const quickAmounts = [100, 500, 1000, 5000, 10000, 25000, 50000];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -67,9 +101,28 @@ const DepositPopup = ({ onClose }) => {
                 value={depositAmount}
                 onChange={handleAmountChange}
                 placeholder="0.00"
-                className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className={`w-full pl-8 pr-4 py-3 border rounded-lg text-lg focus:outline-none focus:ring-2 ${
+                  error ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
+                } focus:border-transparent`}
               />
             </div>
+            <div className="flex justify-between items-center mt-1">
+              <span className="text-xs text-gray-500">
+                Maximum: ${MAX_DEPOSIT_AMOUNT.toLocaleString()}
+              </span>
+              {depositAmount && parseFloat(depositAmount) > 0 && (
+                <span className={`text-xs ${
+                  parseFloat(depositAmount) > MAX_DEPOSIT_AMOUNT ? 'text-red-500' : 'text-gray-500'
+                }`}>
+                  ${parseFloat(depositAmount).toLocaleString()}
+                </span>
+              )}
+            </div>
+            {error && (
+              <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
+                {error}
+              </div>
+            )}
           </div>
 
           {/* Quick Amount Buttons */}
@@ -77,11 +130,14 @@ const DepositPopup = ({ onClose }) => {
             <label className="block text-sm font-semibold text-gray-700 mb-3">
               Quick Select
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {quickAmounts.map((amount) => (
                 <button
                   key={amount}
-                  onClick={() => setDepositAmount(amount.toString())}
+                  onClick={() => {
+                    setDepositAmount(amount.toString());
+                    if (error) setError('');
+                  }}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:border-green-500 hover:bg-green-50 transition-colors"
                 >
                   ${amount.toLocaleString()}
@@ -118,7 +174,7 @@ const DepositPopup = ({ onClose }) => {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!depositAmount || parseFloat(depositAmount) <= 0 || isSubmitting}
+            disabled={!depositAmount || parseFloat(depositAmount) <= 0 || parseFloat(depositAmount) > MAX_DEPOSIT_AMOUNT || isSubmitting}
             className="px-5 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg font-semibold hover:transform hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:transform-none disabled:shadow-none"
           >
             {isSubmitting ? 'Processing...' : 'Deposit Funds'}
