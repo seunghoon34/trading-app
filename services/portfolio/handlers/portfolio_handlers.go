@@ -267,12 +267,16 @@ func GetMultiTimeFramePerformance(c *gin.Context) {
 		return
 	}
 
+	// Portfolio history API works independently of positions
+	// Even accounts with no positions can have cash equity history
+
 	// Define the different periods and their parameters
+	// Valid timeframes: 1Min, 5Min, 15Min, 1H, 1D
 	periods := map[string]string{
 		"1D": "period=1D&timeframe=1H",
 		"1W": "period=1W&timeframe=1D",
-		"1M": "period=1M&timeframe=1W",
-		"1Y": "period=1Y&timeframe=1M",
+		"1M": "period=1M&timeframe=1D",
+		"1Y": "period=1A&timeframe=1D",
 	}
 
 	// Channel to collect results
@@ -303,7 +307,8 @@ func GetMultiTimeFramePerformance(c *gin.Context) {
 			}
 
 			if res.StatusCode != http.StatusOK {
-				results <- result{period: p, err: fmt.Errorf("failed to fetch %s performance from Alpaca: status %d", p, res.StatusCode)}
+				fmt.Printf("Alpaca API error for %s: Status %d, Body: %s\n", p, res.StatusCode, string(body))
+				results <- result{period: p, err: fmt.Errorf("failed to fetch %s performance from Alpaca: status %d, response: %s", p, res.StatusCode, string(body))}
 				return
 			}
 
