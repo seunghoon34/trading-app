@@ -39,6 +39,7 @@ class UserProfile(BaseModel):
 
 class PortfolioResponse(BaseModel):
     portfolio: List[Dict[str, Any]]
+    explanation: str
     status: str
     message: str
 
@@ -301,16 +302,25 @@ def create_tasks(user_profile: UserProfile):
         5. Match the user's risk tolerance and timeline
 
         CRITICAL: Output must be in this exact JSON format:
-        [
-            {{"symbol": "STOCK1", "weight": 0.XX}},
-            {{"symbol": "STOCK2", "weight": 0.XX}},
-            {{"symbol": "STOCK3", "weight": 0.XX}}
-        ]
+        {{
+            "portfolio": [
+                {{"symbol": "STOCK1", "weight": 0.XX}},
+                {{"symbol": "STOCK2", "weight": 0.XX}},
+                {{"symbol": "STOCK3", "weight": 0.XX}}
+            ],
+            "explanation": "Detailed explanation of stock selection rationale, weight allocation reasoning, risk profile alignment, and how this portfolio meets the user's financial goals and risk tolerance. Include specific reasons for each major holding and overall portfolio strategy."
+        }}
 
-        Weights must sum to exactly 1.0.
+        Portfolio weights must sum to exactly 1.0.
+        The explanation should be comprehensive and cover:
+        - Why each stock was selected (fundamental strengths, growth prospects, sector positioning)
+        - How weight allocation reflects risk management and return optimization
+        - How the portfolio aligns with the user's specific risk tolerance and financial goals
+        - Sector diversification strategy and risk mitigation approach
+        - Expected performance characteristics given the user's investment timeline
         """,
         agent=create_agents()[4],  # portfolio_manager_agent
-        expected_output="JSON array with stock symbols and weights that sum to 1.0"
+        expected_output="JSON object with portfolio array and detailed explanation of investment rationale"
     )
 
     validation_task = Task(
@@ -323,29 +333,35 @@ def create_tasks(user_profile: UserProfile):
         3. Ensure all symbols are properly formatted (uppercase, no spaces)
         4. Verify weights sum to exactly 1.0
         5. Ensure 5-8 stocks maximum in final portfolio
+        6. Validate that the explanation is comprehensive and accurately describes the portfolio
 
         If you find invalid tickers:
         - Research and replace with appropriate real US stock tickers
         - Maintain the same sector/style allocation intended by the portfolio manager
         - Keep the same relative weight proportions
+        - Update the explanation to reflect any ticker changes
 
         FINAL OUTPUT REQUIREMENTS:
-        - Must be valid JSON array format
-        - Only real, tradeable US stock tickers
+        - Must be valid JSON object format with "portfolio" and "explanation" keys
+        - Only real, tradeable US stock tickers in portfolio array
         - Weights must sum to exactly 1.0
         - 5-8 stocks maximum
+        - Explanation must be detailed and accurate
 
         CRITICAL: Your final output must be EXACTLY this format:
-        [
-            {"symbol": "AAPL", "weight": 0.30},
-            {"symbol": "MSFT", "weight": 0.25},
-            {"symbol": "GOOGL", "weight": 0.45}
-        ]
+        {
+            "portfolio": [
+                {"symbol": "AAPL", "weight": 0.30},
+                {"symbol": "MSFT", "weight": 0.25},
+                {"symbol": "GOOGL", "weight": 0.45}
+            ],
+            "explanation": "Comprehensive explanation of why these specific stocks were selected, how the weight allocation was determined, how this portfolio aligns with the user's risk tolerance and financial goals, sector diversification strategy, and expected performance characteristics."
+        }
 
-        Return ONLY the JSON array, no additional text or explanation.
+        Return ONLY the JSON object, no additional text or explanation outside the JSON.
         """,
         agent=create_agents()[5],  # validation_agent
-        expected_output="Final validated JSON array with real stock tickers and weights summing to 1.0"
+        expected_output="Final validated JSON object with real stock tickers, weights summing to 1.0, and comprehensive explanation"
     )
 
     return [economy_research_task, research_task, fundamental_analysis_task, 
@@ -410,31 +426,44 @@ async def generate_portfolio(user_profile: UserProfile):
                 json_str = re.sub(r'\s+', ' ', json_str)  # Replace multiple whitespace with single space
                 json_str = re.sub(r'\s*([{}[\],:])\s*', r'\1', json_str)  # Remove spaces around JSON syntax
                 print(f"Cleaned JSON: {json_str}")
-                portfolio_data = json.loads(json_str)
+                portfolio_response = json.loads(json_str)
             else:
-                # Try to find JSON array directly
-                json_match = re.search(r'\[.*\]', result_str, re.DOTALL)
+                # Try to find JSON object directly
+                json_match = re.search(r'\{.*\}', result_str, re.DOTALL)
                 if json_match:
                     json_str = json_match.group(0).strip()
                     # Clean up the JSON string
                     json_str = re.sub(r'\s+', ' ', json_str)
                     json_str = re.sub(r'\s*([{}[\],:])\s*', r'\1', json_str)
-                    print(f"Found and cleaned JSON array: {json_str}")
-                    portfolio_data = json.loads(json_str)
+                    print(f"Found and cleaned JSON object: {json_str}")
+                    portfolio_response = json.loads(json_str)
                 else:
                     raise ValueError("No JSON found in result")
             
-            if isinstance(portfolio_data, list) and len(portfolio_data) > 0:
-                portfolio = portfolio_data
+            # Validate the response structure
+            if isinstance(portfolio_response, dict) and "portfolio" in portfolio_response and "explanation" in portfolio_response:
+                portfolio = portfolio_response["portfolio"]
+                explanation = portfolio_response["explanation"]
+            elif isinstance(portfolio_response, list):
+                # Fallback for old format
+                portfolio = portfolio_response
+                explanation = "Portfolio generated based on comprehensive analysis of market conditions, user risk profile, and investment objectives."
             else:
                 portfolio = [{"symbol": "SAMPLE", "weight": 1.0}]
+                explanation = "Sample portfolio - analysis could not be completed."
                 
         except Exception as e:
             print(f"Error parsing portfolio JSON: {str(e)}")
             # Fallback if parsing fails
             portfolio = [{"symbol": "SAMPLE", "weight": 1.0}]
+            explanation = "Sample portfolio - analysis could not be completed due to parsing error."
         
-        return portfolio
+        return PortfolioResponse(
+            portfolio=portfolio,
+            explanation=explanation,
+            status="success",
+            message="Portfolio generated successfully"
+        )
         
     except Exception as e:
         print(f"Error generating portfolio: {str(e)}")
