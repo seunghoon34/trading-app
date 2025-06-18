@@ -23,7 +23,7 @@ type Position struct {
 // Portfolio represents a user's portfolio
 type Portfolio struct {
 	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	AlpacaID  string             `json:"alpaca_id" bson:"alpaca_id"`
+	AccountID string             `json:"account_id" bson:"alpaca_id"`
 	Positions []Position         `json:"positions" bson:"positions"`
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
@@ -36,10 +36,10 @@ type PortfolioRequest struct {
 
 // createPortfolio creates a new portfolio (prevents duplicates)
 func CreatePortfolio(c *gin.Context) {
-	// Get alpaca_id from header
-	alpacaID := c.GetHeader("X-Alpaca-ID")
-	if alpacaID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Alpaca-ID header is required"})
+	// Get account_id from header
+	accountID := c.GetHeader("X-Account-ID")
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Account-ID header is required"})
 		return
 	}
 
@@ -65,7 +65,7 @@ func CreatePortfolio(c *gin.Context) {
 
 	// Check if portfolio already exists
 	var existingPortfolio Portfolio
-	err := mongo.PortfolioCollection.FindOne(ctx, bson.M{"alpaca_id": alpacaID}).Decode(&existingPortfolio)
+	err := mongo.PortfolioCollection.FindOne(ctx, bson.M{"alpaca_id": accountID}).Decode(&existingPortfolio)
 
 	if err == nil {
 		// Portfolio exists
@@ -83,7 +83,7 @@ func CreatePortfolio(c *gin.Context) {
 
 	// Create new portfolio (no existing portfolio found)
 	portfolio := Portfolio{
-		AlpacaID:  alpacaID,
+		AccountID: accountID,
 		Positions: req.Positions,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -97,16 +97,16 @@ func CreatePortfolio(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message":      "portfolio created successfully",
-		"alpaca_id":    alpacaID,
+		"account_id":   accountID,
 		"portfolio_id": result.InsertedID,
 	})
 }
 
 // updatePortfolio updates an existing portfolio
 func UpdatePortfolio(c *gin.Context) {
-	alpacaID := c.GetHeader("X-Alpaca-ID")
-	if alpacaID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Alpaca-ID header is required"})
+	accountID := c.GetHeader("X-Account-ID")
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Account-ID header is required"})
 		return
 	}
 
@@ -140,7 +140,7 @@ func UpdatePortfolio(c *gin.Context) {
 
 	result, err := mongo.PortfolioCollection.UpdateOne(
 		ctx,
-		bson.M{"alpaca_id": alpacaID},
+		bson.M{"alpaca_id": accountID},
 		update,
 	)
 
@@ -155,16 +155,16 @@ func UpdatePortfolio(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":   "portfolio updated successfully",
-		"alpaca_id": alpacaID,
+		"message":    "portfolio updated successfully",
+		"account_id": accountID,
 	})
 }
 
-// getPortfolio retrieves a portfolio by alpaca_id
+// getPortfolio retrieves a portfolio by account_id
 func GetPortfolio(c *gin.Context) {
-	alpacaID := c.GetHeader("X-Alpaca-ID")
-	if alpacaID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Alpaca-ID header is required"})
+	accountID := c.GetHeader("X-Account-ID")
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Account-ID header is required"})
 		return
 	}
 
@@ -172,7 +172,7 @@ func GetPortfolio(c *gin.Context) {
 	defer cancel()
 
 	var portfolio Portfolio
-	err := mongo.PortfolioCollection.FindOne(ctx, bson.M{"alpaca_id": alpacaID}).Decode(&portfolio)
+	err := mongo.PortfolioCollection.FindOne(ctx, bson.M{"alpaca_id": accountID}).Decode(&portfolio)
 
 	if err != nil {
 		if err == mongodriver.ErrNoDocuments {
@@ -210,18 +210,18 @@ func GetAllPortfolios(c *gin.Context) {
 	})
 }
 
-// deletePortfolio deletes a portfolio by alpaca_id
+// deletePortfolio deletes a portfolio by account_id
 func DeletePortfolio(c *gin.Context) {
-	alpacaID := c.GetHeader("X-Alpaca-ID")
-	if alpacaID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Alpaca-ID header is required"})
+	accountID := c.GetHeader("X-Account-ID")
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Account-ID header is required"})
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	result, err := mongo.PortfolioCollection.DeleteOne(ctx, bson.M{"alpaca_id": alpacaID})
+	result, err := mongo.PortfolioCollection.DeleteOne(ctx, bson.M{"alpaca_id": accountID})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete portfolio"})
 		return
@@ -233,7 +233,7 @@ func DeletePortfolio(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":   "portfolio deleted successfully",
-		"alpaca_id": alpacaID,
+		"message":    "portfolio deleted successfully",
+		"account_id": accountID,
 	})
 }

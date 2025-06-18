@@ -17,7 +17,7 @@ import (
 // RiskProfile represents a user's risk assessment
 type RiskProfile struct {
 	ID                   primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	AlpacaID             string             `json:"alpaca_id" bson:"alpaca_id"`
+	AccountID            string             `json:"account_id" bson:"alpaca_id"`
 	RiskTolerance        string             `json:"risk_tolerance" bson:"risk_tolerance" binding:"required,oneof=conservative moderate aggressive"`
 	InvestmentTimeline   string             `json:"investment_timeline" bson:"investment_timeline" binding:"required,oneof=short_term medium_term long_term"`
 	FinancialGoals       []string           `json:"financial_goals" bson:"financial_goals" binding:"required,dive,oneof=retirement wealth_building income_generation capital_preservation education home_purchase"`
@@ -42,10 +42,10 @@ type RiskProfileRequest struct {
 
 // CreateRiskProfile creates a new risk profile (prevents duplicates)
 func CreateRiskProfile(c *gin.Context) {
-	// Get alpaca_id from header
-	alpacaID := c.GetHeader("X-Alpaca-ID")
-	if alpacaID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Alpaca-ID header is required"})
+	// Get account_id from header
+	accountID := c.GetHeader("X-Account-ID")
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Account-ID header is required"})
 		return
 	}
 
@@ -60,7 +60,7 @@ func CreateRiskProfile(c *gin.Context) {
 
 	// Check if risk profile already exists
 	var existingProfile RiskProfile
-	err := mongo.RiskProfileCollection.FindOne(ctx, bson.M{"alpaca_id": alpacaID}).Decode(&existingProfile)
+	err := mongo.RiskProfileCollection.FindOne(ctx, bson.M{"alpaca_id": accountID}).Decode(&existingProfile)
 
 	if err == nil {
 		// Risk profile exists
@@ -78,7 +78,7 @@ func CreateRiskProfile(c *gin.Context) {
 
 	// Create new risk profile (no existing profile found)
 	riskProfile := RiskProfile{
-		AlpacaID:             alpacaID,
+		AccountID:            accountID,
 		RiskTolerance:        req.RiskTolerance,
 		InvestmentTimeline:   req.InvestmentTimeline,
 		FinancialGoals:       req.FinancialGoals,
@@ -98,16 +98,16 @@ func CreateRiskProfile(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message":         "risk profile created successfully",
-		"alpaca_id":       alpacaID,
+		"account_id":      accountID,
 		"risk_profile_id": result.InsertedID,
 	})
 }
 
 // UpdateRiskProfile updates an existing risk profile
 func UpdateRiskProfile(c *gin.Context) {
-	alpacaID := c.GetHeader("X-Alpaca-ID")
-	if alpacaID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Alpaca-ID header is required"})
+	accountID := c.GetHeader("X-Account-ID")
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Account-ID header is required"})
 		return
 	}
 
@@ -136,7 +136,7 @@ func UpdateRiskProfile(c *gin.Context) {
 
 	result, err := mongo.RiskProfileCollection.UpdateOne(
 		ctx,
-		bson.M{"alpaca_id": alpacaID},
+		bson.M{"alpaca_id": accountID},
 		update,
 	)
 
@@ -151,16 +151,16 @@ func UpdateRiskProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":   "risk profile updated successfully",
-		"alpaca_id": alpacaID,
+		"message":    "risk profile updated successfully",
+		"account_id": accountID,
 	})
 }
 
-// GetRiskProfile retrieves a risk profile by alpaca_id
+// GetRiskProfile retrieves a risk profile by account_id
 func GetRiskProfile(c *gin.Context) {
-	alpacaID := c.GetHeader("X-Alpaca-ID")
-	if alpacaID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Alpaca-ID header is required"})
+	accountID := c.GetHeader("X-Account-ID")
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Account-ID header is required"})
 		return
 	}
 
@@ -168,7 +168,7 @@ func GetRiskProfile(c *gin.Context) {
 	defer cancel()
 
 	var riskProfile RiskProfile
-	err := mongo.RiskProfileCollection.FindOne(ctx, bson.M{"alpaca_id": alpacaID}).Decode(&riskProfile)
+	err := mongo.RiskProfileCollection.FindOne(ctx, bson.M{"alpaca_id": accountID}).Decode(&riskProfile)
 
 	if err != nil {
 		if err == mongodriver.ErrNoDocuments {

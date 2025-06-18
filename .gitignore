@@ -58,3 +58,7 @@ notes.txt
 .env.development
 .env.production
 *.env
+
+# Test artifacts
+cookies.txt
+*.tmp

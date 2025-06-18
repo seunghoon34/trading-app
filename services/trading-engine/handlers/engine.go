@@ -45,17 +45,23 @@ func sendAlpacaResponse(c *gin.Context, res *http.Response) {
 }
 
 func CreateOrder(c *gin.Context) {
+	// Get account_id from header
+	accountID := c.GetHeader("X-Account-ID")
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Account-ID header is required"})
+		return
+	}
+
 	var OrderData struct {
-		AccountID string `json:"account_id"`
-		Side      string `json:"side"`
-		Symbol    string `json:"symbol"`
-		Qty       string `json:"qty"`
-		Notional  string `json:"notional"`
+		Side     string `json:"side"`
+		Symbol   string `json:"symbol"`
+		Qty      string `json:"qty"`
+		Notional string `json:"notional"`
 	}
 
 	if err := c.ShouldBindJSON(&OrderData); err != nil {
 		logger.WithFields(map[string]interface{}{
-			"account_id": OrderData.AccountID,
+			"account_id": accountID,
 			"symbol":     OrderData.Symbol,
 			"error":      err.Error(),
 			"action":     "order_create_failed",
@@ -69,7 +75,7 @@ func CreateOrder(c *gin.Context) {
 		return
 	}
 
-	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/orders", OrderData.AccountID)
+	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/orders", accountID)
 
 	var payload *strings.Reader
 	if OrderData.Qty != "" {
@@ -79,7 +85,7 @@ func CreateOrder(c *gin.Context) {
 	}
 
 	logger.WithFields(map[string]interface{}{
-		"account_id": OrderData.AccountID,
+		"account_id": accountID,
 		"symbol":     OrderData.Symbol,
 		"side":       OrderData.Side,
 		"qty":        OrderData.Qty,
@@ -91,7 +97,7 @@ func CreateOrder(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to execute order"})
 		logger.WithFields(map[string]interface{}{
-			"account_id": OrderData.AccountID,
+			"account_id": accountID,
 			"symbol":     OrderData.Symbol,
 			"error":      err.Error(),
 			"action":     "order_create_failed",

@@ -78,12 +78,29 @@ func callTradingService(orderReq OrderRequest) (map[string]interface{}, error) {
 		tradingServiceURL = "http://trading-engine:8083" // Default for local development
 	}
 
-	jsonData, err := json.Marshal(orderReq)
+	// Remove AccountID from the request body as it should be in header
+	orderReqBody := map[string]string{
+		"side":     orderReq.Side,
+		"symbol":   orderReq.Symbol,
+		"notional": orderReq.Notional,
+	}
+
+	jsonData, err := json.Marshal(orderReqBody)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := http.Post(tradingServiceURL+"/orders", "application/json", bytes.NewBuffer(jsonData))
+	// Create request with proper headers
+	req, err := http.NewRequest("POST", tradingServiceURL+"/orders", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Account-ID", orderReq.AccountID) // Set account ID in header
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -107,10 +124,10 @@ func callTradingService(orderReq OrderRequest) (map[string]interface{}, error) {
 }
 
 func PurchasePortfolio(c *gin.Context) {
-	// Get alpaca_id from header (this is the account_id)
-	alpacaID := c.GetHeader("X-Alpaca-ID")
-	if alpacaID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Alpaca-ID header is required"})
+	// Get account_id from header
+	accountID := c.GetHeader("X-Account-ID")
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Account-ID header is required"})
 		return
 	}
 
@@ -118,7 +135,7 @@ func PurchasePortfolio(c *gin.Context) {
 	defer cancel()
 
 	// Step 1: Get buying power from Alpaca
-	accountURL := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/account", alpacaID)
+	accountURL := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/trading/accounts/%s/account", accountID)
 	res, err := makeAlpacaRequest("GET", accountURL, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch account details"})
@@ -180,7 +197,7 @@ func PurchasePortfolio(c *gin.Context) {
 
 	// Step 2: Get portfolio positions from MongoDB
 	var portfolio Portfolio
-	err = mongo.PortfolioCollection.FindOne(ctx, bson.M{"alpaca_id": alpacaID}).Decode(&portfolio)
+	err = mongo.PortfolioCollection.FindOne(ctx, bson.M{"alpaca_id": accountID}).Decode(&portfolio)
 	if err != nil {
 		if err == mongodriver.ErrNoDocuments {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Portfolio not found"})
@@ -217,7 +234,7 @@ func PurchasePortfolio(c *gin.Context) {
 
 		// Prepare order request
 		orderReq := OrderRequest{
-			AccountID: alpacaID,
+			AccountID: accountID,
 			Side:      "buy",
 			Symbol:    strings.ToUpper(position.Symbol),
 			Notional:  fmt.Sprintf("%.0f", dollarAmount), // No decimal places
