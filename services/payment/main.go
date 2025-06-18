@@ -19,7 +19,7 @@ func main() {
 		})
 	})
 
-	r.POST("/deposit/:account_id/:amount", handlers.DepositFunds)
+	r.POST("/deposit/:amount", handlers.DepositFunds)
 
 	r.Run(":8090") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

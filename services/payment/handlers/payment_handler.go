@@ -134,20 +134,22 @@ func retrieveACHDetails(account_id string) (*ACHDetails, error) {
 
 func DepositFunds(c *gin.Context) {
 	amount := c.Param("amount")
-	account_id := c.Param("account_id")
-	fmt.Printf("Received account_id: '%s'\n", account_id)
+	accountID := c.GetHeader("X-Account-ID")
 
-	if account_id == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "account_id is required"})
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "X-Account-ID header is required"})
 		return
 	}
-	ach_details, err := retrieveACHDetails(account_id)
+
+	fmt.Printf("Received account_id: '%s'\n", accountID)
+
+	ach_details, err := retrieveACHDetails(accountID)
 	if err != nil {
 		fmt.Printf("Error retrieving ACH details: %v\n", err) // Add this debug line
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve ACH details"})
 		return
 	}
-	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/accounts/%s/transfers", account_id)
+	url := fmt.Sprintf("https://broker-api.sandbox.alpaca.markets/v1/accounts/%s/transfers", accountID)
 	payload := strings.NewReader(fmt.Sprintf("{\"transfer_type\":\"ach\",\"direction\":\"INCOMING\",\"timing\":\"immediate\",\"relationship_id\":\"%s\",\"amount\":\"%s\"}", ach_details.Id, amount))
 	res, err := makeAlpacaRequest("POST", url, payload)
 	if err != nil {
@@ -164,7 +166,7 @@ func DepositFunds(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"account_id": account_id,
+		"account_id": accountID,
 		"amount":     amount,
 		"message":    "Funds deposited successfully",
 	})
