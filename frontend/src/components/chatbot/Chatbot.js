@@ -42,7 +42,7 @@ const Chatbot = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: newMessages,
-          url: 'https://72ec-2001-fb1-41-a82a-2dae-45ee-bdf5-94b5.ngrok-free.app'
+          url: 'https://a13c-2001-fb1-41-a82a-2dae-45ee-bdf5-94b5.ngrok-free.app'
         })
       });
       
@@ -100,7 +100,7 @@ const Chatbot = () => {
                   </div>
                 </div>
               ) : (
-                <div className="bg-gray-100 rounded-2xl px-4 py-3 max-w-xl">
+                <div className="bg-purple-100 border border-purple-200 rounded-2xl px-4 py-3 max-w-xl shadow-sm">
                   <div className="text-gray-800">
                     {msg.content}
                   </div>

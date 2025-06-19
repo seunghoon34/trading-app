@@ -195,6 +195,24 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
+  # MCP Server Service (Pandora)
+  mcp-server:
+    build:
+      context: ./services/mcp-server
+      dockerfile: dockerfile
+    container_name: mcp-server-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - trading-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3003 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
   # API Gateway Service
   api-gateway:
     build:

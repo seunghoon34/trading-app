@@ -574,13 +574,19 @@ const PandoraPopup = ({ onClose, onPurchaseComplete }) => {
       setLoading(true);
       setError('');
 
+      // Switch to portfolio generating screen
+      setCurrentStep('portfolioGenerating');
+      setLoading(false); // Reset loading for the loading screen
+
       const apiFormData = mapFormDataToApiFormat(formData);
       const portfolioResponse = await apiService.generatePortfolio(apiFormData);
       setGeneratedPortfolio(portfolioResponse);
+      setCurrentStep('portfolio');
 
     } catch (error) {
       console.error('Error regenerating portfolio:', error);
       setError(error.message || 'Failed to regenerate portfolio. Please try again.');
+      setCurrentStep('portfolio'); // Go back to portfolio on error
     } finally {
       setLoading(false);
     }

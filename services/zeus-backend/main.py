@@ -116,7 +116,7 @@ async def chat(request: ChatRequest, x_account_id: Optional[str] = Header(None, 
                 {
                     "type": "url",
                     "url": f"{request.url}/sse",
-                    "name": "dice-server",
+                    "name": "pandora-server",
                 }
             ],
             tools=[{

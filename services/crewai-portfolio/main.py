@@ -118,10 +118,12 @@ def create_agents():
 
     market_research_agent = Agent(
         role="Market Research Analyst",
-        goal='Research and identify promising US equities based on market trends, news, and fundamental factors',
+        goal='Research and identify promising US equities including stocks and ETFs based on market trends, news, and fundamental factors',
         backstory="""You are an expert market researcher with 10+ years of experience in identifying
         investment opportunities in US equity markets. You excel at analyzing market trends,
-        company fundamentals, and industry dynamics.""",
+        company fundamentals, industry dynamics, and ETF analysis. You understand when individual
+        stocks vs ETFs are more appropriate based on investor profiles, risk tolerance, and
+        diversification needs.""",
         verbose=True,
         allow_delegation=False,
         tools=[scrape_tool, search_tool],
@@ -130,10 +132,12 @@ def create_agents():
 
     fundamental_analyst_agent = Agent(
         role='Fundamental Analyst',
-        goal='Analyze financial metrics, valuation, and company fundamentals for selected stocks',
+        goal='Analyze financial metrics, valuation, and fundamentals for selected stocks and ETFs',
         backstory="""You are a seasoned fundamental analyst with expertise in financial statement
-        analysis, valuation models, and company assessment. You can evaluate P/E ratios,
-        revenue growth, profit margins, and other key financial metrics.""",
+        analysis, valuation models, company assessment, and ETF evaluation. You can evaluate P/E ratios,
+        revenue growth, profit margins, expense ratios, tracking error, and other key financial metrics.
+        You understand the different analytical approaches needed for individual stocks versus ETFs,
+        including analyzing underlying holdings, sector allocations, and fund management quality.""",
         verbose=True,
         allow_delegation=False,
         tools=[scrape_tool, search_tool],
@@ -164,11 +168,13 @@ def create_agents():
 
     validation_agent = Agent(
         role='Portfolio Validation Specialist',
-        goal='Validate and correct stock tickers, ensure proper formatting, and verify portfolio output',
-        backstory="""You are a meticulous validation specialist with expertise in US stock market
-        tickers and portfolio formatting. You ensure all stock symbols are valid NYSE/NASDAQ tickers
-        and that portfolio outputs meet exact specifications. You have comprehensive knowledge of
-        US stock ticker symbols and can identify and correct any invalid or generic references.""",
+        goal='Validate and correct stock and ETF tickers, ensure proper formatting, and verify portfolio output',
+        backstory="""You are a meticulous validation specialist with expertise in US stock and ETF
+        tickers and portfolio formatting. You ensure all symbols are valid NYSE/NASDAQ/ARCA tickers
+        for both individual stocks and ETFs, and that portfolio outputs meet exact specifications. 
+        You have comprehensive knowledge of US stock and ETF ticker symbols and can identify and 
+        correct any invalid or generic references. You understand the difference between stock and 
+        ETF symbols and ensure appropriate diversification.""",
         tools=[search_tool],
         verbose=True,
         allow_delegation=False,
@@ -228,60 +234,105 @@ def create_tasks(user_profile: UserProfile):
 
     research_task = Task(
         description=f"""
-        Research and identify 8-12 promising US equity investment opportunities suitable for a user with:
+        Research and identify 8-12 promising US equity investment opportunities (stocks and ETFs) suitable for a user with:
         - Risk tolerance: {user_profile.risk_tolerance}
         - Investment timeline: {user_profile.investment_timeline}
         - Financial goals: {user_profile.financial_goals}
         - Age bracket: {user_profile.age_bracket}
         - Investment experience: {user_profile.investment_experience}
 
-        Focus on:
-        1. Large and mid-cap US stocks
-        2. Different sectors for diversification
-        3. Companies with strong fundamentals and growth prospects
-        4. Consider current market conditions and trends
-
-        Provide a list of stock symbols with brief rationale for each selection.
+        Consider both individual stocks AND ETFs based on user profile:
+        
+        **For Individual Stocks:**
+        1. Large and mid-cap US stocks with strong fundamentals
+        2. Growth and value opportunities across different sectors
+        3. Companies with competitive advantages and growth prospects
+        
+        **For ETFs:**
+        1. Broad market ETFs (S&P 500, Total Market) for core holdings
+        2. Sector-specific ETFs for targeted exposure (technology, healthcare, etc.)
+        3. International developed market ETFs for global diversification
+        4. Bond ETFs for stability (especially for conservative profiles)
+        5. Thematic ETFs (clean energy, emerging technologies) for growth-oriented profiles
+        
+        **Selection Criteria:**
+        - Match ETF vs stock allocation to user's experience level and risk tolerance
+        - Consider expense ratios for ETFs (prefer low-cost options)
+        - Balance individual stock picks with diversified ETF exposure
+        - For less experienced investors, favor ETFs for core positions
+        - For experienced investors, consider more individual stock picks
+        
+        Provide a mixed list of stock and ETF symbols with brief rationale for each selection.
+        Include ticker symbols and specify whether each is a stock or ETF.
         """,
         agent=create_agents()[1],  # market_research_agent
-        expected_output="List of 8-12 US stock symbols with brief investment rationale for each"
+        expected_output="List of 8-12 US equity symbols (mix of stocks and ETFs) with investment rationale and type specification for each"
     )
 
     fundamental_analysis_task = Task(
         description="""
-        Perform fundamental analysis on the stocks identified by the Market Research Analyst.
-        For each stock, analyze:
-
+        Perform fundamental analysis on the stocks and ETFs identified by the Market Research Analyst.
+        
+        **For Individual Stocks, analyze:**
         1. Financial metrics (P/E, P/B, ROE, debt-to-equity)
         2. Revenue and earnings growth trends
         3. Profit margins and efficiency ratios
         4. Competitive position and market share
         5. Management quality and corporate governance
-
-        Rank the stocks based on fundamental strength and provide scores (1-10) for each.
+        
+        **For ETFs, analyze:**
+        1. Expense ratios and fee structure
+        2. Tracking error and performance vs benchmark
+        3. Assets under management (AUM) and liquidity
+        4. Holdings concentration and diversification
+        5. Fund methodology and management approach
+        6. Underlying asset quality and sector allocations
+        
+        **Additional ETF Considerations:**
+        - For sector ETFs: sector outlook and cyclical positioning
+        - For broad market ETFs: market cap exposure and style tilts
+        - For international ETFs: geographic diversification benefits
+        - For bond ETFs: duration, credit quality, and yield characteristics
+        
+        Rank all securities (stocks and ETFs) based on fundamental strength and appropriateness 
+        for the user profile. Provide scores (1-10) for each with specific reasoning for stocks vs ETFs.
         """,
         agent=create_agents()[2],  # fundamental_analyst_agent
-        expected_output="Fundamental analysis scores and rankings for each stock with key metrics"
+        expected_output="Fundamental analysis scores and rankings for each stock and ETF with appropriate metrics for each type"
     )
 
     risk_analysis_task = Task(
         description=f"""
-        Perform comprehensive risk analysis on the selected stocks considering user risk profile:
+        Perform comprehensive risk analysis on the selected stocks and ETFs considering user risk profile:
         - Risk tolerance: {user_profile.risk_tolerance}
         - Risk capacity: {user_profile.risk_capacity}
 
-        Calculate and analyze:
+        **For All Securities (Stocks & ETFs):**
         1. Historical volatility (1-year and 3-year)
         2. Beta coefficients relative to S&P 500
-        3. Correlation matrix between stocks
+        3. Correlation matrix between all selected securities
         4. Maximum drawdown analysis
         5. Risk-adjusted returns (Sharpe ratio)
-        6. Sector concentration risk
+        
+        **Additional Risk Considerations:**
+        6. Sector concentration risk across the entire portfolio
+        7. Geographic concentration risk (especially for international ETFs)
+        8. Style risk (growth vs value, large vs small cap)
+        9. ETF-specific risks: tracking error, liquidity risk, counterparty risk
+        10. Single stock risk vs diversified ETF risk assessment
+        
+        **Position Sizing Recommendations:**
+        - Consider ETFs for larger allocations due to diversification benefits
+        - Limit individual stock positions based on concentration risk
+        - Account for user's experience level in risk tolerance
+        - Balance between diversified ETF exposure and focused stock picks
+        - Consider correlation benefits of mixing stocks and ETFs
 
-        Provide risk scores and recommendations for position sizing based on user's risk profile.
+        Provide risk scores and position sizing recommendations that account for the different 
+        risk characteristics of individual stocks versus ETFs.
         """,
         agent=create_agents()[3],  # risk_analyst_agent
-        expected_output="Risk analysis with volatility metrics, correlations, and position sizing recommendations"
+        expected_output="Risk analysis with volatility metrics, correlations, and position sizing recommendations for stocks and ETFs"
     )
 
     portfolio_construction_task = Task(
@@ -295,11 +346,13 @@ def create_tasks(user_profile: UserProfile):
         - Financial goals: {user_profile.financial_goals}
 
         Portfolio Requirements:
-        1. Select 5-8 best stocks from the analyzed list
+        1. Select 5-8 best securities (mix of stocks and ETFs) from the analyzed list
         2. Assign weights that sum to exactly 1.0
         3. Balance growth potential with risk management
-        4. Consider diversification across sectors
+        4. Consider diversification across sectors and asset types
         5. Match the user's risk tolerance and timeline
+        6. Use ETFs for core diversified exposure and individual stocks for targeted opportunities
+        7. Consider user experience level when balancing ETF vs stock allocation
 
         CRITICAL: Output must be in this exact JSON format:
         {{
@@ -312,12 +365,10 @@ def create_tasks(user_profile: UserProfile):
         }}
 
         Portfolio weights must sum to exactly 1.0.
-        The explanation should be comprehensive and cover:
-        - Why each stock was selected (fundamental strengths, growth prospects, sector positioning)
-        - How weight allocation reflects risk management and return optimization
-        - How the portfolio aligns with the user's specific risk tolerance and financial goals
-        - Sector diversification strategy and risk mitigation approach
-        - Expected performance characteristics given the user's investment timeline
+        The explanation should be a concise summary (3-4 sentences) covering:
+        - Brief rationale for the stock/ETF mix and key holdings
+        - How the portfolio aligns with user's risk tolerance and goals
+        - Expected risk/return profile for the investment timeline
         """,
         agent=create_agents()[4],  # portfolio_manager_agent
         expected_output="JSON object with portfolio array and detailed explanation of investment rationale"
@@ -328,34 +379,37 @@ def create_tasks(user_profile: UserProfile):
         Validate and finalize the portfolio output from the Portfolio Manager.
 
         Your critical responsibilities:
-        1. Verify ALL stock symbols are valid US ticker symbols (NYSE/NASDAQ)
-        2. Replace any generic references like "Stock A", "Company X", "STOCK1" with actual tickers
+        1. Verify ALL symbols are valid US ticker symbols (NYSE/NASDAQ/ARCA for stocks and ETFs)
+        2. Replace any generic references like "Stock A", "Company X", "STOCK1", "ETF1" with actual tickers
         3. Ensure all symbols are properly formatted (uppercase, no spaces)
         4. Verify weights sum to exactly 1.0
-        5. Ensure 5-8 stocks maximum in final portfolio
+        5. Ensure 5-8 securities (mix of stocks and ETFs) maximum in final portfolio
         6. Validate that the explanation is comprehensive and accurately describes the portfolio
+        7. Ensure appropriate balance between individual stocks and ETFs based on user profile
 
         If you find invalid tickers:
-        - Research and replace with appropriate real US stock tickers
-        - Maintain the same sector/style allocation intended by the portfolio manager
+        - Research and replace with appropriate real US stock or ETF tickers
+        - Maintain the same sector/style/asset type allocation intended by the portfolio manager
         - Keep the same relative weight proportions
+        - For ETF replacements, ensure expense ratios are reasonable (typically under 0.75%)
         - Update the explanation to reflect any ticker changes
 
         FINAL OUTPUT REQUIREMENTS:
         - Must be valid JSON object format with "portfolio" and "explanation" keys
-        - Only real, tradeable US stock tickers in portfolio array
+        - Only real, tradeable US stock and ETF tickers in portfolio array
         - Weights must sum to exactly 1.0
-        - 5-8 stocks maximum
-        - Explanation must be detailed and accurate
+        - 5-8 securities (mix of stocks and ETFs) maximum
+        - Explanation must be a concise 3-4 sentence summary
 
         CRITICAL: Your final output must be EXACTLY this format:
         {
             "portfolio": [
-                {"symbol": "AAPL", "weight": 0.30},
-                {"symbol": "MSFT", "weight": 0.25},
-                {"symbol": "GOOGL", "weight": 0.45}
+                {"symbol": "VTI", "weight": 0.40},
+                {"symbol": "AAPL", "weight": 0.20},
+                {"symbol": "QQQ", "weight": 0.25},
+                {"symbol": "MSFT", "weight": 0.15}
             ],
-            "explanation": "Comprehensive explanation of why these specific stocks were selected, how the weight allocation was determined, how this portfolio aligns with the user's risk tolerance and financial goals, sector diversification strategy, and expected performance characteristics."
+            "explanation": "This portfolio combines broad market ETF exposure with high-quality individual stocks to match your risk tolerance. The allocation emphasizes growth potential while maintaining diversification through ETFs. Expected to deliver competitive returns over your investment timeline with managed risk."
         }
 
         Return ONLY the JSON object, no additional text or explanation outside the JSON.
