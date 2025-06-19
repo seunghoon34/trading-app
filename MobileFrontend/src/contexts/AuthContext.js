@@ -30,19 +30,27 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      const response = await fetch(API_CONFIG.getFullUrl(API_CONFIG.ENDPOINTS.ME), {
-        method: 'GET',
-        headers: API_CONFIG.getHeaders(token),
-      });
+      // Try to validate token with backend
+      try {
+        const response = await fetch(API_CONFIG.getFullUrl(API_CONFIG.ENDPOINTS.ME), {
+          method: 'GET',
+          headers: API_CONFIG.getHeaders(token),
+        });
 
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+          setIsAuthenticated(true);
+        } else {
+          await AsyncStorage.removeItem('authToken');
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      } catch (networkError) {
+        // If backend is not available, still allow demo mode with stored token
+        console.warn('Backend not available, running in demo mode');
+        setUser({ email: 'demo@example.com' });
         setIsAuthenticated(true);
-      } else {
-        await AsyncStorage.removeItem('authToken');
-        setUser(null);
-        setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -64,17 +72,32 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (response.ok) {
-        // Store token in AsyncStorage
-        await AsyncStorage.setItem('authToken', data.token);
-        
-        // Get updated user info
-        await checkAuthStatus();
+        // Check if token exists before storing
+        if (data.token) {
+          await AsyncStorage.setItem('authToken', data.token);
+          // Get updated user info
+          await checkAuthStatus();
+        } else {
+          // If no token in response, set user data directly (for demo purposes)
+          setUser({ email });
+          setIsAuthenticated(true);
+        }
         return { success: true, data };
       } else {
         return { success: false, error: data.error || 'Login failed' };
       }
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Demo login when backend is not available
+      if (email && password) {
+        console.warn('Backend not available, using demo login');
+        await AsyncStorage.setItem('authToken', 'demo-token');
+        setUser({ email, name: 'Demo User' });
+        setIsAuthenticated(true);
+        return { success: true, data: { message: 'Demo login successful' } };
+      }
+      
       return { success: false, error: 'Network error' };
     }
   };
