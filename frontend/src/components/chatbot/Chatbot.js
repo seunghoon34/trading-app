@@ -82,8 +82,9 @@ const Chatbot = () => {
     );
   }
 
-  return (
-    <div className="h-full flex flex-col max-h-screen">
+      return (
+      <div className="h-full flex flex-col max-h-screen">
+
       {/* Messages - This will be scrollable */}
       <div 
         className="flex-1 overflow-y-auto px-8 py-5 flex justify-center"
@@ -106,8 +107,8 @@ const Chatbot = () => {
                 </div>
               )}
             </div>
-          ))}
-          {loading && (
+                      ))}
+            {loading && (
             <div className="prose max-w-none">
               <div className="whitespace-pre-line text-gray-800 leading-relaxed">
                 <div className="flex items-center space-x-2">
