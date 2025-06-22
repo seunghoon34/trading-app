@@ -1,9 +1,10 @@
 import random
 from fastmcp import FastMCP
 import requests
+import os
 
 mcp = FastMCP(name="pandora-server")
-
+AUTH_HEADER = os.getenv("ALPACA_AUTH_HEADER")
 
 
 @mcp.tool
@@ -14,7 +15,7 @@ def get_user_trade_position(account_id: str):
 
     headers = {
         "accept": "application/json",
-        "authorization": "Basic Q0tKSzM2UzNFRTZPTDRBWTU1SDE6THJkYXFpaUQyZzRGeHV4cG1rOE1yWmxibE5qYTJVOU5HR0lsQ0tGMg=="
+        "authorization": AUTH_HEADER
 }
 
     response = requests.get(url, headers=headers)
@@ -36,8 +37,8 @@ def buy_user_qty_stock(symbol: str, qty: str , account_id: str):
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
-        "authorization": "Basic Q0tKSzM2UzNFRTZPTDRBWTU1SDE6THJkYXFpaUQyZzRGeHV4cG1rOE1yWmxibE5qYTJVOU5HR0lsQ0tGMg=="
-    }
+        "authorization": AUTH_HEADER
+}
 @mcp.tool
 def buy_user_amount_stock(symbol: str, amount: str , account_id: str):
     """Buy an amounts(dollars) of stocks for the User with the given account ID a"""
@@ -54,8 +55,8 @@ def buy_user_amount_stock(symbol: str, amount: str , account_id: str):
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
-        "authorization": "Basic Q0tKSzM2UzNFRTZPTDRBWTU1SDE6THJkYXFpaUQyZzRGeHV4cG1rOE1yWmxibE5qYTJVOU5HR0lsQ0tGMg=="
-    }
+        "authorization": AUTH_HEADER
+}
 @mcp.tool
 def sell_user_qty_stock(symbol: str, qty: str , account_id: str):
     """Buy an amounts(quantity) of stocks for the User with the given account ID a"""
@@ -72,8 +73,8 @@ def sell_user_qty_stock(symbol: str, qty: str , account_id: str):
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
-        "authorization": "Basic Q0tKSzM2UzNFRTZPTDRBWTU1SDE6THJkYXFpaUQyZzRGeHV4cG1rOE1yWmxibE5qYTJVOU5HR0lsQ0tGMg=="
-    }
+        "authorization": AUTH_HEADER
+}
 @mcp.tool
 def sell_user_amount_stock(symbol: str, amount: str , account_id: str):
     """Buy an amounts(dollars) of stocks for the User with the given account ID a"""
@@ -90,7 +91,7 @@ def sell_user_amount_stock(symbol: str, amount: str , account_id: str):
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
-        "authorization": "Basic Q0tKSzM2UzNFRTZPTDRBWTU1SDE6THJkYXFpaUQyZzRGeHV4cG1rOE1yWmxibE5qYTJVOU5HR0lsQ0tGMg=="
+        "authorization": AUTH_HEADER
     }
     response = requests.post(url, json=payload, headers=headers)
 
