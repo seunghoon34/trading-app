@@ -62,3 +62,50 @@ notes.txt
 # Test artifacts
 cookies.txt
 *.tmp
+
+# Security sensitive files
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+!debug.keystore
+auth_token*
+session*
+*.secret
+
+# Database dumps
+*.sql
+*.dump
+*.sqlite
+*.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Temporary files
+*.temp
+*.cache
+*~
+
+# API Keys and secrets (additional patterns)
+*api_key*
+*secret_key*
+*private_key*
+*credentials*
+
+# Frontend build artifacts
+build/
+dist/
+.next/
+out/
+
+# Dependencies
+node_modules/
+vendor/
+Pods/

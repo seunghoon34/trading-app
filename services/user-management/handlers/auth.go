@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -37,10 +38,10 @@ func generateJWT(accountID, email string) (string, error) {
 	// Create token with claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	// Get JWT secret from environment (we'll set this up)
+	// Get JWT secret from environment (required)
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "your-secret-key" // Default for development
+		log.Fatal("JWT_SECRET environment variable is required")
 	}
 
 	// Sign and return the token
