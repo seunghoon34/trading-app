@@ -7,9 +7,11 @@ from crewai import Crew, Process
 
 # Import local modules
 from config import get_llm
-from models import UserProfile, PortfolioResponse
+from models import UserProfile, PortfolioResponse, RebalanceRequest
 from agents import create_agents
 from tasks import create_tasks
+from rebalance_agents import create_rebalance_agents
+from rebalance_tasks import create_rebalance_tasks
 
 # Warning control
 warnings.filterwarnings('ignore')
@@ -114,6 +116,56 @@ async def generate_portfolio(user_profile: UserProfile):
     except Exception as e:
         print(f"Error generating portfolio: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generating portfolio: {str(e)}")
+
+@app.post("/rebalance-portfolio")
+async def rebalance_portfolio(request: RebalanceRequest):
+    """Analyze and rebalance existing portfolio based on user profile and current positions"""
+    
+    try:
+        # Validate environment variables
+        if not os.getenv("ANTHROPIC_API_KEY") and not os.getenv("OPENAI_API_KEY"):
+            raise HTTPException(status_code=500, detail="Either ANTHROPIC_API_KEY or OPENAI_API_KEY must be configured")
+        
+        if not os.getenv("SERPER_API_KEY"):
+            raise HTTPException(status_code=500, detail="SERPER_API_KEY not configured")
+        
+        print(f"Starting portfolio rebalancing for request: {request}")
+        
+        # Create rebalancing agents and tasks
+        llm = get_llm()
+        agents = create_rebalance_agents(llm)
+        tasks = create_rebalance_tasks(
+            agents=agents, 
+            user_profile=request.user_profile,
+            current_portfolio=request.current_portfolio
+        )
+        
+        # Create crew
+        crew = Crew(
+            agents=list(agents.values()),
+            tasks=tasks,
+            process=Process.sequential,
+            verbose=True
+        )
+        
+        print("Executing CrewAI rebalancing workflow...")
+        result = crew.kickoff()
+        
+        print(f"CrewAI Result: {result}")
+        
+        # Parse the result
+        portfolio_data = parse_portfolio_result(result)
+        
+        return PortfolioResponse(
+            portfolio=portfolio_data["portfolio"],
+            explanation=portfolio_data["explanation"],
+            status="success",
+            message="Portfolio rebalancing completed successfully"
+        )
+        
+    except Exception as e:
+        print(f"Error rebalancing portfolio: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error rebalancing portfolio: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
