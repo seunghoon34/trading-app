@@ -8,7 +8,7 @@ on:
     - 'main'
     paths:
     - 'services/payment/**'
-    - '.github/workflows/payment/**'
+    - '.github/workflows/payment.yaml'
 
 jobs:
   deploy:
