@@ -41,3 +41,17 @@ jobs:
         gcloud auth configure-docker asia-southeast1-docker.pkg.dev
         docker build -t asia-southeast1-docker.pkg.dev/$GOOGLE_PROJECT/pandora/payment:latest ./services/payment
         docker push asia-southeast1-docker.pkg.dev/$GOOGLE_PROJECT/pandora/payment:latest
+    
+    - name: deploy to gke
+      env:
+        GOOGLE_PROJECT: ${{ secrets.GOOGLE_PROJECT }}
+      run: |
+        gcloud container clusters get-credentials autopilot-cluster-1 --region asia-southeast1
+        # Replace the project ID in each file individually
+        sed -i "s/GOOGLE_PROJECT/$GOOGLE_PROJECT/g" ./services/payment/k8s/deployment.yaml
+        sed -i "s/GOOGLE_PROJECT/$GOOGLE_PROJECT/g" ./services/payment/k8s/service.yaml
+        # Apply the files in order
+        kubectl apply -f ./services/payment/k8s/deployment.yaml
+        kubectl apply -f ./services/payment/k8s/service.yaml
+        # Wait for rollout
+        kubectl rollout status deployment/payment
