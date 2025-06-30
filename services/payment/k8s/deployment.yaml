@@ -21,6 +21,9 @@ spec:
         ports:
         - containerPort: 8090
           name: http
+        envFrom:
+        - secretRef:
+            name: alpaca-secrets
         resources:
           requests:
             cpu: "100m"
