@@ -1,0 +1,37 @@
+name: Deploy Payment Service
+
+on:
+  push:
+    branches:
+    - 'main'
+  paths:
+    - 'services/payment/**'
+    - '.github/workflows/payment/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: code checkout
+      uses: actions/checkout@v2
+    
+    - name: run tests
+      run: |
+        cd services/payment
+        go test ./...
+
+    - name: install the gcloud cli
+      uses: google-github-actions/setup-gcloud@v0
+      with:
+        project_id: ${{ secrets.GOOGLE_PROJECT }}
+        service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+        export_default_credentials: true
+
+    - name: build and push the docker image
+      env:
+        GOOGLE_PROJECT: ${{ secrets.GOOGLE_PROJECT }}
+      run: |
+        gcloud auth configure-docker asia-southeast1-docker.pkg.dev
+        docker build -t asia-southeast1-docker.pkg.dev/$GOOGLE_PROJECT/pandora/payment:latest ./services/payment
+        docker push asia-southeast1-docker.pkg.dev/$GOOGLE_PROJECT/pandora/payment:latest
