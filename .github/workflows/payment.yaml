@@ -34,6 +34,11 @@ jobs:
       with:
         project_id: ${{ secrets.GOOGLE_PROJECT }}
 
+    - name: Install gke-gcloud-auth-plugin
+      run: |
+        sudo apt-get update && sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
+        echo 'export USE_GKE_GCLOUD_AUTH_PLUGIN=True' >> $GITHUB_ENV
+
     - name: build and push the docker image
       env:
         GOOGLE_PROJECT: ${{ secrets.GOOGLE_PROJECT }}
@@ -45,6 +50,7 @@ jobs:
     - name: deploy to gke
       env:
         GOOGLE_PROJECT: ${{ secrets.GOOGLE_PROJECT }}
+        USE_GKE_GCLOUD_AUTH_PLUGIN: True
       run: |
         gcloud container clusters get-credentials autopilot-cluster-1 --region asia-southeast1
         # Replace the project ID in each file individually
