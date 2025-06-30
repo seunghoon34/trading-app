@@ -2,10 +2,11 @@
 name: Deploy Payment Service
 
 on:
+  workflow_dispatch:  # Allows manual triggering
   push:
     branches:
     - 'main'
-  paths:
+    paths:
     - 'services/payment/**'
     - '.github/workflows/payment/**'
 
